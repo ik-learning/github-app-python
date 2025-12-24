@@ -1,0 +1,49 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "url": "https://api.github.com/repos/johnydoe/github-app-test-repository/pulls/1",
+    "id": 3128853901,
+    "node_id": "PR_kwDOQuX0qc66foWN",
+    "html_url": "https://github.com/johnydoe/github-app-test-repository/pull/1",
+    "number": 1,
+    "state": "open",
+    "locked": false,
+    "title": "first example PR",
+    "user": {
+      "login": "johnydoe",
+      "id": 5395690,
+      "type": "User"
+    },
+    "body": "PR description with template",
+    "created_at": "2025-12-24T15:32:29Z",
+    "updated_at": "2025-12-24T15:32:29Z",
+    "merged": false,
+    "mergeable": null,
+    "head": {
+      "ref": "first-pull-requst",
+      "sha": "907689d97ef4b27940bcf0896dcc9b47a094197e"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "db8cf5f21ad8fe41bbde3f75cafd178462970725"
+    }
+  },
+  "repository": {
+    "id": 1122366633,
+    "name": "github-app-test-repository",
+    "full_name": "johnydoe/github-app-test-repository",
+    "private": false,
+    "owner": {
+      "login": "johnydoe",
+      "id": 5395690,
+      "type": "User"
+    },
+    "html_url": "https://github.com/johnydoe/github-app-test-repository"
+  },
+  "sender": {
+    "login": "johnydoe",
+    "id": 5395690,
+    "type": "User"
+  }
+}

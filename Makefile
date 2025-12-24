@@ -35,6 +35,26 @@ docker-compose-up:
 docker-compose-down:
 	docker-compose down
 
+#? docker-restart-app: Restart the web-app service
+docker-restart-app:
+	docker-compose restart web-app
+
+#? docker-restart-smee: Restart the smee service
+docker-restart-smee:
+	docker-compose restart smee
+
+#? docker-logs-app: View logs for web-app service
+docker-logs-app:
+	docker-compose logs -f web-app
+
+#? docker-logs-smee: View logs for smee service
+docker-logs-smee:
+	docker-compose logs -f smee
+
+#? docker-rebuild-app: Rebuild and restart web-app service
+docker-rebuild-app:
+	docker-compose up -d --build web-app
+
 #? test: Run tests with pytest
 test:
 	pipenv run pytest

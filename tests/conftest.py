@@ -50,6 +50,36 @@ def pr_review_comment_payload(load_fixture):
 
 
 @pytest.fixture
+def pr_edited_payload(load_fixture):
+    """Load pull request edited event payload."""
+    return load_fixture("pull_request_edited.json")
+
+
+@pytest.fixture
+def pr_opened_real_payload(load_fixture):
+    """Load real pull request opened event payload from actual GitHub webhook."""
+    return load_fixture("pull_request_opened_real.json")
+
+
+@pytest.fixture
+def push_new_branch_payload(load_fixture):
+    """Load push event for new branch creation."""
+    return load_fixture("push_new_branch.json")
+
+
+@pytest.fixture
+def push_to_main_payload(load_fixture):
+    """Load push event to main branch."""
+    return load_fixture("push_to_main.json")
+
+
+@pytest.fixture
+def push_force_payload(load_fixture):
+    """Load force push event."""
+    return load_fixture("push_force.json")
+
+
+@pytest.fixture
 def mock_github_app(mocker):
     """Mock GitHubApp instance."""
     return mocker.MagicMock()

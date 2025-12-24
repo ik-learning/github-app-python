@@ -1,0 +1,44 @@
+{
+  "action": "edited",
+  "number": 1,
+  "changes": {
+    "title": {
+      "from": "first example PR"
+    },
+    "body": {
+      "from": "Old description"
+    }
+  },
+  "pull_request": {
+    "url": "https://api.github.com/repos/johnydoe/github-app-test-repository/pulls/1",
+    "id": 3128853901,
+    "number": 1,
+    "state": "open",
+    "title": "Updated PR title - with new feature",
+    "user": {
+      "login": "johnydoe",
+      "id": 5395690,
+      "type": "User"
+    },
+    "body": "Updated description with more details",
+    "created_at": "2025-12-24T15:32:29Z",
+    "updated_at": "2025-12-24T15:45:00Z",
+    "merged": false
+  },
+  "repository": {
+    "id": 1122366633,
+    "name": "github-app-test-repository",
+    "full_name": "johnydoe/github-app-test-repository",
+    "private": false,
+    "owner": {
+      "login": "johnydoe",
+      "id": 5395690,
+      "type": "User"
+    }
+  },
+  "sender": {
+    "login": "johnydoe",
+    "id": 5395690,
+    "type": "User"
+  }
+}
