@@ -1,10 +1,10 @@
-service:
+services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
@@ -14,7 +14,8 @@ service:
     #   sh -c "gunicorn -k uvicorn.workers.UvicornWorker main:app --host
     env_file:
       - .envrc
-    networks: github-app-network
+    networks:
+    - github-app-network
 
   smee:
     build:
@@ -25,7 +26,8 @@ service:
       - SMEE_TARGET=${SMEE_TARGET}
     env_file:
       - .envrc
-    networks: github-app-network
+    networks:
+    - github-app-network
 
 networks:
   github-app-network:

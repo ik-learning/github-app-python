@@ -15,3 +15,18 @@ pre-commit-uninstall:
 #? pre-commit-validate: Validate files with pre-commit hooks
 pre-commit-validate:
 	@pre-commit run --all-files
+
+#? docker-build: Build the Docker image for the GitHub App (--no-cache option can be added if needed)
+docker-build:
+	docker build -t githubapp --progress plain  .
+
+#? docker-run: Run the Docker container for the GitHub App
+docker-run:
+	docker run --rm -it -p 8080:8000 githubapp
+
+#? docker-compose-up: Start the Docker containers using docker-compose
+docker-compose-up:
+	docker-compose up --build
+
+docker-compose-down:
+	docker-compose down

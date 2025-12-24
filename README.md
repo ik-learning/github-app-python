@@ -7,6 +7,14 @@
 
 ## Commands
 
+### Python
+
 ```sh
 pipenv shell
+pipenv lock
+pipenv sync
+pip freeze
+pip install --no-cache-dir -r requirements.txt
+pip freeze > requirements.txt
+pipenv --venv
 ```
