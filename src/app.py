@@ -14,7 +14,7 @@ github_app = GitHubApp(
     app,
     github_app_id=int(os.getenv("GITHUB_APP_ID")),
     github_app_key=private_key,
-    github_app_secret=os.getenv("GITHUB_WEBHOOK_SECRET").encode()
+    github_app_secret=os.getenv("GITHUB_WEBHOOK_SECRET").encode(),
     github_app_route="/webhooks/github",
 )
 

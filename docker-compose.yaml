@@ -9,8 +9,6 @@ services:
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
-    # command: >
-    #   sh -c "gunicorn -k uvicorn.workers.UvicornWorker main:app --host
     networks:
     - github-app-network
 

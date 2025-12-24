@@ -12,7 +12,6 @@ COPY Pipfile Pipfile.lock ${APP_HOME}/
 
 RUN pip install --root-user-action ignore pipenv
 RUN pipenv install --deploy --ignore-pipfile
-RUN pip freeze
 
 COPY . ${APP_HOME}/
 EXPOSE 8080
