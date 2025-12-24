@@ -22,7 +22,11 @@ docker-build:
 
 #? docker-run: Run the Docker container for the GitHub App
 docker-run:
-	docker run --rm -it -p 8080:8000 githubapp
+	@docker run --rm -it -p 8080:8000 \
+		-e GITHUB_APP_ID=$(GITHUB_APP_ID) \
+		-e GITHUB_APP_PRIVATE_KEY=$(GITHUB_APP_PRIVATE_KEY) \
+		-e GITHUB_WEBHOOK_SECRET=$(GITHUB_WEBHOOK_SECRET) \
+		githubapp
 
 #? docker-compose-up: Start the Docker containers using docker-compose
 docker-compose-up:

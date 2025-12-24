@@ -1,9 +1,22 @@
 import os
+import base64
 from fastapi import FastAPI
 from githubapp import GitHubApp
 # GitHubAppMiddleware, GitHubAppEventHandler
 
 app = FastAPI()
+
+# Decode the base64-encoded private key
+private_key_base64 = os.getenv("GITHUB_APP_PRIVATE_KEY")
+private_key = base64.b64decode(private_key_base64).decode('utf-8')
+
+github_app = GitHubApp(
+    app,
+    github_app_id=int(os.getenv("GITHUB_APP_ID")),
+    github_app_key=private_key,
+    github_app_secret=os.getenv("GITHUB_WEBHOOK_SECRET").encode()
+    github_app_route="/webhooks/github",
+)
 
 @app.get("/status")
 def index():

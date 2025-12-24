@@ -9,11 +9,8 @@ services:
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
-      - GITHUB_WEBHOOK_PATH=${GITHUB_WEBHOOK_PATH}
     # command: >
     #   sh -c "gunicorn -k uvicorn.workers.UvicornWorker main:app --host
-    env_file:
-      - .envrc
     networks:
     - github-app-network
 
@@ -24,8 +21,6 @@ services:
     environment:
       - SMEE_URL=${SMEE_URL}
       - SMEE_TARGET=${SMEE_TARGET}
-    env_file:
-      - .envrc
     networks:
     - github-app-network
 

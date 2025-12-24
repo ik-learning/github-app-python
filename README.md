@@ -1,9 +1,9 @@
 # github-app-python
 
 - [Create Github App](https://docs.github.com/en/apps/creating-github-apps)
-- [Smee.io](https://smee.io/)
 - [Smee start channel](https://smee.io/8pLy0kP1cyDzDT)
 - [Docker.py](https://github.com/docker/docker-py)
+- [Smee.io](https://smee.io/)
 
 ## Commands
 
@@ -18,3 +18,28 @@ pip install --no-cache-dir -r requirements.txt
 pip freeze > requirements.txt
 pipenv --venv
 ```
+
+## Quick Start
+
+1. Create a Smee channel
+  - Open https://smee.io in your browser.​
+  - Click Start a new channel.
+  - Copy the Webhook Proxy URL at the top (for example, https://smee.io/abc123...).
+  - This URL will be used as the webhook URL for your GitHub App so Smee can receive events.
+
+2. Register a GitHub App using the Smee URL
+   - On GitHub, go to: `Settings → Developer settings → GitHub Apps → New GitHub App`.
+   - Fill in the required fields (name, homepage URL, etc.)
+   - Webhook URL -> our smee.io url `https://smee.io/abc123....`
+   - Webhook secret -> `uuid`
+
+  Create a Github App in https://github.com/settings/apps
+   - Create a private key
+   - Select the permissions that required to install the app
+   - Select the events, like `issues`, `issue_comments` and etc
+
+## Resources
+
+- [Fastapi](https://github.com/fastapi/fastapi)
+- [Fastapi template](https://github.com/fastapi/full-stack-fastapi-template)
+- [Probot: smee](https://github.com/probot/smee-client)
