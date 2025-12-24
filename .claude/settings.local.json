@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(make docker-run:*)",
+      "Bash(echo:*)",
+      "Bash(docker run:*)",
+      "WebSearch",
+      "WebFetch(domain:pypi.org)"
+    ]
+  }
+}
