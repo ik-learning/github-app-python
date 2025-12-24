@@ -1,0 +1,6 @@
+FROM --platform=arm64 node:20-alpine
+
+# https://github.com/probot/smee-client
+RUN npm install -g smee-client
+
+CMD ["sh", "-c", "smee --url $SMEE_URL --target $SMEE_TARGET"]
