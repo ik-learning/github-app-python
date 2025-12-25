@@ -176,7 +176,7 @@ sequenceDiagram
 
 ## Background Processing Flowchart
 
-This flowchart shows the decision points and process flow in the background worker thread.
+This flowchart shows the high-level process flow when a pull request event is received.
 
 ```mermaid
 flowchart TD
@@ -185,48 +185,36 @@ flowchart TD
     Validate -->|Invalid| Reject[Return 401 Unauthorized]
     Validate -->|Valid| Accept[Return 200 Accepted]
 
-    Accept --> Queue[Submit to ThreadPool]
-    Queue --> Parse[Parse Webhook Payload<br/>PullRequestPayload.from_webhook]
+    Accept --> Queue[Submit to Background Thread]
+    Queue --> Parse[Parse Webhook Payload]
 
-    Parse --> ValidPR{PR Valid for<br/>Processing?}
-    ValidPR -->|No: closed/merged| LogSkip[Log: Skipping PR]
-    ValidPR -->|Yes: open| CheckCache{Token in<br/>Cache?}
+    Parse --> ValidPR{PR Open?}
+    ValidPR -->|No: closed/merged| Skip[Skip Processing]
+    ValidPR -->|Yes| Clone[Clone Repository<br/>to Temp Folder]
 
-    CheckCache -->|Yes: valid| UseCache[Use Cached Token]
-    CheckCache -->|No or expired| FetchToken[Fetch New Token<br/>from GitHub API]
+    Clone -->|Success| Checkout[Checkout PR Branch]
+    Clone -->|Failure| Error[Processing Failed]
 
-    FetchToken --> CacheToken[Cache Token<br/>with 5-min buffer]
-    CacheToken --> CreateMgr[Create RepositoryManager]
-    UseCache --> CreateMgr
+    Checkout --> Analyze[Analyze Repository]
 
-    CreateMgr --> AuthURL[Construct Authenticated<br/>Clone URL]
-    AuthURL --> Clone[Git Clone Repository<br/>to /tmp/repo-pr-sha]
+    Analyze -->|Success| PostSuccess[Post Comment:<br/>Analysis Results]
+    Analyze -->|Failure| PostFail[Post Comment:<br/>Error Status]
 
-    Clone -->|Success| Checkout[Git Checkout PR Branch]
-    Clone -->|Failure| ErrorClone[Log Error:<br/>Clone Failed]
+    PostSuccess --> Cleanup[Cleanup:<br/>Delete Cloned Folder]
+    PostFail --> Cleanup
 
-    Checkout --> Analyze[Analyze Repository Structure<br/>Count files & directories]
-    Analyze --> Format[Format Comment Template<br/>with stats]
-
-    Format --> Post[POST Comment to PR<br/>via GitHub API]
-    Post -->|Success| LogSuccess[Log: Comment Posted]
-    Post -->|Failure| LogError[Log: Comment Failed]
-
-    LogSuccess --> Cleanup[Cleanup: Delete<br/>Clone Directory]
-    LogError --> Cleanup
-    ErrorClone --> Cleanup
-    LogSkip --> End([Processing Complete])
-
+    Error --> End([Processing Complete])
+    Skip --> End
     Cleanup --> End
     Reject --> End
 
     style Start fill:#e1f5ff,stroke:#0066cc,stroke-width:3px
     style End fill:#e8f5e9,stroke:#4caf50,stroke-width:3px
     style Reject fill:#ffebee,stroke:#f44336,stroke-width:2px
-    style ErrorClone fill:#ffebee,stroke:#f44336,stroke-width:2px
-    style LogError fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    style Error fill:#ffebee,stroke:#f44336,stroke-width:2px
     style Accept fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    style LogSuccess fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style PostSuccess fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style PostFail fill:#fff3e0,stroke:#ff9800,stroke-width:2px
 ```
 
 ## Pull Request State Diagram
@@ -237,57 +225,39 @@ This state diagram shows the lifecycle of a pull request as it's processed by th
 stateDiagram-v2
     [*] --> PR_Created: User creates PR
 
-    PR_Created --> Webhook_Received: pull_request.opened /<br/>pull_request.synchronize
+    PR_Created --> Webhook_Received: pull_request event
 
     Webhook_Received --> Validating: Signature check
 
     Validating --> Rejected: Invalid signature
     Validating --> Queued: Valid signature
 
-    Queued --> Processing: Thread available
+    Queued --> Processing: Background thread starts
 
     state Processing {
         [*] --> Parsing
         Parsing --> Validation: Extract payload
 
         Validation --> Skipped: PR closed/merged
-        Validation --> TokenFetch: PR is open
+        Validation --> Cloning: PR is open
 
-        TokenFetch --> Cloning: Token acquired
-
-        state Cloning {
-            [*] --> AuthURL: Build clone URL
-            AuthURL --> GitClone: Execute git clone
-            GitClone --> Checkout: Clone success
-            Checkout --> [*]: Branch checked out
-        }
-
-        Cloning --> Analyzing: Repository ready
+        Cloning --> Checkout: Clone success
         Cloning --> Failed: Clone error
 
-        state Analyzing {
-            [*] --> Scanning: Walk directory tree
-            Scanning --> Counting: Count files/dirs
-            Counting --> [*]: Stats collected
-        }
+        Checkout --> Analyzing: Branch checked out
 
         Analyzing --> Commenting: Analysis complete
-
-        state Commenting {
-            [*] --> Format: Format comment
-            Format --> PostAPI: POST to GitHub
-            PostAPI --> [*]: Comment created
-        }
+        Analyzing --> Failed: Analysis error
 
         Commenting --> Cleanup: Comment posted
-        Failed --> Cleanup: Error occurred
-        Skipped --> Cleanup: No processing needed
+        Failed --> Cleanup: Post error comment
+        Skipped --> [*]: No action needed
 
-        Cleanup --> [*]: Directory removed
+        Cleanup --> [*]: Temp folder deleted
     }
 
     Processing --> Completed: Success
-    Processing --> Error: Exception thrown
+    Processing --> Error: Exception
 
     Rejected --> [*]
     Completed --> [*]
@@ -299,15 +269,8 @@ stateDiagram-v2
     end note
 
     note right of Queued
-        Immediate 200 response sent
-        ThreadPoolExecutor handles
-        background processing
-    end note
-
-    note right of Processing
-        All operations in
-        background thread
-        with try-finally cleanup
+        Immediate 200 response
+        Background processing starts
     end note
 ```
 
