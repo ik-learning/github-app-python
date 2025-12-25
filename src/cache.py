@@ -37,19 +37,24 @@ class TokenCache:
             # Check if we have a cached token
             if installation_id in self._cache:
                 cached_data = self._cache[installation_id]
-                # Check if token is still valid (with buffer)
-                buffer_time = datetime.now(timezone.utc) + timedelta(minutes=self._buffer_minutes)
                 expires_at = cached_data['expires_at']
 
-                # Ensure both datetimes are comparable (make naive if expires_at is naive)
-                if expires_at.tzinfo is None:
-                    buffer_time = buffer_time.replace(tzinfo=None)
-
-                if expires_at and expires_at > buffer_time:
-                    logger.info(f"Using cached token for installation {installation_id}")
-                    return cached_data['token']
+                # If expires_at is None, refetch the token
+                if expires_at is None:
+                    logger.info(f"Cached token has no expiration, refetching for installation {installation_id}")
                 else:
-                    logger.info(f"Cached token expired for installation {installation_id}")
+                    # Check if token is still valid (with buffer)
+                    buffer_time = datetime.now(timezone.utc) + timedelta(minutes=self._buffer_minutes)
+
+                    # Ensure both datetimes are comparable (make naive if expires_at is naive)
+                    if expires_at.tzinfo is None:
+                        buffer_time = buffer_time.replace(tzinfo=None)
+
+                    if expires_at > buffer_time:
+                        logger.info(f"Using cached token for installation {installation_id}")
+                        return cached_data['token']
+                    else:
+                        logger.info(f"Cached token expired for installation {installation_id}")
 
             # Get new token using the provided fetcher
             logger.info(f"Fetching new token for installation {installation_id}")

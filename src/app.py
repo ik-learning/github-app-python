@@ -55,37 +55,6 @@ def index():
     return {"status": "ok"}
 
 
-def post_pr_comment(client, pr_data, repo_stats, clone_dir):
-    """
-    Post a summary comment to the pull request.
-
-    Args:
-        client: GitHub API client
-        pr_data: PullRequestPayload object
-        repo_stats: Dictionary with 'file_count' and 'dir_count'
-        clone_dir: Path to cloned repository
-    """
-    owner, repo = pr_data.repository.split('/')
-    current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-
-    comment_body = BOT_COMMENT_TEMPLATE.format(
-        timestamp=current_time,
-        clone_dir=clone_dir,
-        branch=pr_data.branch,
-        file_count=repo_stats['file_count'],
-        dir_count=repo_stats['dir_count']
-    )
-
-    logger.info(f"Posting comment to PR #{pr_data.number}")
-    client.issues.create_comment(
-        owner=owner,
-        repo=repo,
-        issue_number=pr_data.number,
-        body=comment_body
-    )
-    logger.info(f"Successfully posted comment to PR #{pr_data.number}")
-
-
 # Background worker for the heavy processing (runs in thread pool)
 def _process_pr_sync(payload):
     """
@@ -117,7 +86,7 @@ def _process_pr_sync(payload):
         try:
             clone_dir = repo_manager.setup()
             repo_stats = analyze_repository_structure(clone_dir)
-            post_pr_comment(client, pr_data, repo_stats, clone_dir)
+            repo_manager.post_comment(client, repo_stats)
             logger.info(f"Background processing for PR #{pr_data.number} finished successfully")
         finally:
             repo_manager.cleanup()

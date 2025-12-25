@@ -17,6 +17,7 @@ pip freeze
 pip install --no-cache-dir -r requirements.txt
 pip freeze > requirements.txt
 pipenv --venv
+pytest tests/test_utils.py tests/test_cache.py -v --no-cov
 ```
 
 ## Quick Start

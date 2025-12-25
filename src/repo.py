@@ -68,9 +68,9 @@ class RepositoryManager:
         Safe to call even if directory doesn't exist.
         """
         if self.clone_dir and os.path.exists(self.clone_dir):
-            logger.info(f"Cleaning up: removing {self.clone_dir}")
+            logger.debug(f"Cleaning up: removing {self.clone_dir}")
             shutil.rmtree(self.clone_dir)
-            logger.info(f"Successfully removed {self.clone_dir}")
+            logger.debug(f"Successfully removed {self.clone_dir}")
         else:
             logger.debug("No clone directory to clean up")
 
