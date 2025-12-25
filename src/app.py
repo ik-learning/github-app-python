@@ -89,6 +89,7 @@ def _process_pr_sync(payload):
     except Exception:
         logger.exception("Background PR processing failed")
 
+@github_app.on('pull_request.opened')
 @github_app.on('pull_request.synchronize')
 @with_rate_limit_handling(github_app)
 def handle_pr():
@@ -96,7 +97,7 @@ def handle_pr():
     payload = dict(github_app.payload)
     # Submit to thread pool for background processing
     executor.submit(_process_pr_sync, payload)
-    logger.info("PR synchronize event accepted for background processing")
+    logger.info("PR event accepted for background processing")
     return {"status": "accepted"}
 
 @app.get("/test")
