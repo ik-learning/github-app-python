@@ -68,28 +68,24 @@ graph TB
 
 ## Pull Request Processing Flow
 
-This sequence diagram shows the complete flow from when a user creates a pull request to when the bot posts a comment with analysis results.
+This sequence diagram shows the high-level flow from when a user creates a pull request to when the bot posts a status comment.
 
 ```mermaid
 sequenceDiagram
     actor User
     participant GH as GitHub
-    participant Smee as Smee.io<br/>(smee.io/channel-12345)
-    participant SC as Smee Client<br/>(Docker Container)
-    participant API as FastAPI App<br/>(web-app Container)
-    participant BG as Background Thread<br/>(ThreadPoolExecutor)
-    participant Cache as TokenCache
-    participant Repo as RepositoryManager
-    participant FS as File System<br/>(/tmp/)
+    participant Smee as Smee.io
+    participant SC as Smee Client
+    participant API as FastAPI App
+    participant BG as Background Thread
 
     User->>GH: Create Pull Request
     activate GH
-    Note over GH: pull_request.opened event
+    Note over GH: pull_request event
     GH->>Smee: POST webhook event
     deactivate GH
 
     activate Smee
-    Note over Smee: Stores event in channel
     Smee-->>GH: 200 OK
     deactivate Smee
 
@@ -101,77 +97,49 @@ sequenceDiagram
 
     SC->>API: POST /webhooks/github
     activate API
-    Note over API: GitHubApp middleware<br/>validates signature
+    Note over API: Validate signature
 
-    API->>API: Parse payload into<br/>PullRequestPayload
-    API->>BG: executor.submit(process_pr_sync)
+    API->>API: Parse payload
+    API->>BG: Submit to background thread
     activate BG
 
-    API-->>SC: 200 {"status": "accepted"}
+    API-->>SC: 200 Accepted
     deactivate API
     SC-->>Smee: Forward response
     deactivate SC
 
-    Note over BG: Background processing starts
+    Note over BG: Background processing
 
-    BG->>Cache: get_token(install_id)
-    activate Cache
-    alt Token cached and valid
-        Cache-->>BG: Return cached token
-    else Token expired or missing
-        Cache->>GH: Get installation token
+    BG->>GH: Clone repository
+    activate GH
+    GH-->>BG: Repository cloned
+    deactivate GH
+
+    BG->>BG: Checkout PR branch
+
+    BG->>BG: Analyze repository
+
+    alt Analysis successful
+        BG->>GH: POST comment with results
         activate GH
-        GH-->>Cache: Access token + expires_at
+        Note over GH: Success status
+        GH-->>BG: Comment posted
         deactivate GH
-        Cache->>Cache: Cache token<br/>(5 min buffer)
-        Cache-->>BG: Return new token
+    else Analysis failed
+        BG->>GH: POST comment with error
+        activate GH
+        Note over GH: Error status
+        GH-->>BG: Comment posted
+        deactivate GH
     end
-    deactivate Cache
 
-    BG->>Repo: Create RepositoryManager
-    activate Repo
+    BG->>BG: Cleanup cloned folder
 
-    Repo->>Repo: setup()
-    Note over Repo: Construct authenticated URL<br/>with token
-
-    Repo->>GH: git clone with token
-    activate GH
-    GH-->>Repo: Repository contents
-    deactivate GH
-
-    Repo->>FS: Clone to /tmp/repo-pr-sha
-    activate FS
-    FS-->>Repo: Clone complete
-
-    Repo->>Repo: git checkout branch
-    Repo-->>BG: Return clone_dir path
-
-    BG->>BG: analyze_repository_structure()
-    Note over BG: Recursively count<br/>files & directories
-
-    BG->>FS: os.walk(clone_dir)
-    FS-->>BG: File and directory list
-
-    BG->>BG: Calculate stats:<br/>file_count, dir_count
-
-    BG->>Repo: post_comment(client, stats)
-
-    Repo->>GH: POST /repos/{owner}/{repo}/issues/{pr}/comments
-    activate GH
-    Note over GH: Bot comment with<br/>analysis results
-    GH-->>Repo: Comment created
-    deactivate GH
-
-    Repo->>FS: cleanup() - delete clone_dir
-    FS-->>Repo: Directory removed
-    deactivate FS
-    deactivate Repo
-
-    Note over BG: Background processing complete
+    Note over BG: Processing complete
     deactivate BG
 
     GH->>User: Notify: New comment on PR
-    Note over User: User sees bot comment<br/>with file/directory counts
+    Note over User: User sees status comment
 ```
 
 ## Background Processing Flowchart
