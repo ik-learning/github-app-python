@@ -3,6 +3,7 @@
 import json
 import os
 import logging
+import base64
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,29 @@ def parse_datetime(dt_value):
                 except ValueError:
                     continue
     return dt_value
+
+def decode_base64_key(encoded_key):
+    """
+    Decode a base64-encoded key.
+
+    Args:
+        encoded_key: Base64-encoded string
+
+    Returns:
+        str: Decoded UTF-8 string
+
+    Raises:
+        ValueError: If the key cannot be decoded
+    """
+    if not encoded_key:
+        raise ValueError("Encoded key cannot be empty")
+
+    try:
+        decoded_bytes = base64.b64decode(encoded_key)
+        return decoded_bytes.decode('utf-8')
+    except Exception as e:
+        raise ValueError(f"Failed to decode base64 key: {str(e)}")
+
 
 def json_prettify(data):
     return json.dumps(data, indent=4, default=str)

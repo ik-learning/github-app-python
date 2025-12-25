@@ -9,9 +9,10 @@ from datetime import datetime
 from pathlib import Path
 
 import sys
+import base64
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from utils import parse_datetime, json_prettify, read_file, write_file, analyze_repository_structure
+from utils import parse_datetime, json_prettify, read_file, write_file, analyze_repository_structure, decode_base64_key
 
 
 class TestParseDatetime:
@@ -57,6 +58,80 @@ class TestParseDatetime:
         invalid = "not a date"
         result = parse_datetime(invalid)
         assert result == invalid
+
+
+class TestDecodeBase64Key:
+    """Tests for decode_base64_key function."""
+
+    def test_decode_valid_base64_key(self):
+        """Test decoding a valid base64-encoded string."""
+        original_text = "This is a test private key"
+        encoded = base64.b64encode(original_text.encode('utf-8')).decode('utf-8')
+
+        result = decode_base64_key(encoded)
+        assert result == original_text
+
+    def test_decode_multiline_key(self):
+        """Test decoding a multiline key (like SSH keys)."""
+        original_key = """-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA1234567890
+abcdefghijklmnop
+-----END RSA PRIVATE KEY-----"""
+        encoded = base64.b64encode(original_key.encode('utf-8')).decode('utf-8')
+
+        result = decode_base64_key(encoded)
+        assert result == original_key
+
+    def test_decode_unicode_content(self):
+        """Test decoding base64 with unicode characters."""
+        original_text = "Hello 世界 🔑"
+        encoded = base64.b64encode(original_text.encode('utf-8')).decode('utf-8')
+
+        result = decode_base64_key(encoded)
+        assert result == original_text
+
+    def test_decode_empty_string_raises(self):
+        """Test that empty string raises ValueError."""
+        with pytest.raises(ValueError, match="Encoded key cannot be empty"):
+            decode_base64_key("")
+
+    def test_decode_none_raises(self):
+        """Test that None raises ValueError."""
+        with pytest.raises(ValueError, match="Encoded key cannot be empty"):
+            decode_base64_key(None)
+
+    def test_decode_invalid_base64_raises(self):
+        """Test that invalid base64 raises ValueError."""
+        with pytest.raises(ValueError, match="Failed to decode base64 key"):
+            decode_base64_key("not-valid-base64!@#$%")
+
+    def test_decode_non_utf8_raises(self):
+        """Test that non-UTF8 content raises ValueError."""
+        # Create invalid UTF-8 bytes
+        invalid_bytes = b'\xff\xfe'
+        encoded = base64.b64encode(invalid_bytes).decode('utf-8')
+
+        with pytest.raises(ValueError, match="Failed to decode base64 key"):
+            decode_base64_key(encoded)
+
+    def test_decode_whitespace_preserved(self):
+        """Test that whitespace is preserved in decoded content."""
+        original_text = "line1\n  line2\t\ttab"
+        encoded = base64.b64encode(original_text.encode('utf-8')).decode('utf-8')
+
+        result = decode_base64_key(encoded)
+        assert result == original_text
+        assert "\n" in result
+        assert "\t" in result
+
+    def test_decode_long_key(self):
+        """Test decoding a long key (simulating real private keys)."""
+        original_text = "A" * 10000  # Long string
+        encoded = base64.b64encode(original_text.encode('utf-8')).decode('utf-8')
+
+        result = decode_base64_key(encoded)
+        assert result == original_text
+        assert len(result) == 10000
 
 
 class TestJsonPrettify:

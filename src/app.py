@@ -1,16 +1,11 @@
 import os
-import base64
-from datetime import datetime
 from fastapi import FastAPI
 from githubapp import GitHubApp, with_rate_limit_handling
 import logging
 from concurrent.futures import ThreadPoolExecutor
-import asyncio
-import threading
 
-from utils import read_file, json_prettify, analyze_repository_structure
+from utils import read_file, analyze_repository_structure, decode_base64_key
 from model import PullRequestPayload
-from constants import BOT_COMMENT_TEMPLATE
 from cache import TokenCache
 from repo import RepositoryManager
 
@@ -38,7 +33,7 @@ if missing_vars:
 
 # Decode the base64-encoded private key
 private_key_base64 = os.getenv("GITHUB_APP_PRIVATE_KEY")
-private_key = base64.b64decode(private_key_base64).decode('utf-8')
+private_key = decode_base64_key(private_key_base64)
 
 github_app = GitHubApp(
     app,
