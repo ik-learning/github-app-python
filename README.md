@@ -14,6 +14,7 @@ A GitHub App that automatically processes pull request synchronize events, analy
 - [Environment Variables](#environment-variables)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
+- [GitHub App Permissions](#github-app-permissions)
 - [Webhook Handler](#webhook-handler-handle_pr)
 - [Testing](#testing)
 - [Development Commands](#development-commands)
@@ -51,9 +52,22 @@ cat path/to/private-key.pem | base64
   - **Name**: Your app name
   - **Homepage URL**: Your repository URL
   - **Webhook URL**: Your Smee.io URL from step 1
-  - **Webhook secret**: Generate a UUID for security
-- Grant required permissions:
-  - Repository permissions: Contents (read), Pull requests (read/write)
+  - **Webhook secret**: Generate a UUID for security (e.g., `550e8400-e29b-41d4-a716-446655440000`)
+
+#### Configure Permissions
+Set the following **Repository permissions**:
+
+| Permission | Access | Purpose |
+|------------|--------|---------|
+| **Contents** | Read | Clone repository and analyze files |
+| **Pull requests** | Read and write | Read PR data and post comments |
+| **Metadata** | Read | Repository metadata (automatic) |
+
+#### Subscribe to Events
+Under "Subscribe to events", check:
+- ✅ **Pull request**
+
+This enables the app to receive `pull_request.synchronize` webhook events.
 
 ### 3. Create and configure private key
 - In your GitHub App settings, generate a private key
@@ -127,6 +141,65 @@ Webhook Event → Validate → Cache Token → Clone Repo → Analyze → Commen
 - **Automatic Cleanup**: Repositories deleted after processing to save disk space
 - **Repository Analysis**: Recursively counts files and directories (excluding .git)
 - **Unique Clone Directories**: Format: `/tmp/{repo}-{pr_number}-{short_sha}`
+
+## GitHub App Permissions
+
+### Required Permissions
+
+The app requires the following GitHub App permissions to function:
+
+| Permission | Access Level | Why Required |
+|------------|-------------|--------------|
+| **Contents** | Read | • Clone repository<br>• Read files and directory structure<br>• Analyze repository contents |
+| **Pull requests** | Read & Write | • Receive PR webhook events<br>• Read PR metadata (branch, SHA, state)<br>• Post comments on PRs |
+| **Metadata** | Read | • Repository information<br>• Clone URLs<br>• Default branch info<br>*(Automatically included)* |
+
+### Required Webhook Events
+
+Subscribe to the following events in your GitHub App settings:
+
+- ✅ **Pull request** - Receives `pull_request.synchronize` events
+
+### Verification Steps
+
+After configuring permissions:
+
+**1. Verify Installation Token:**
+```bash
+# Check logs for successful token fetch
+# Should see: "Fetching new token for installation {id}"
+# Should see: "Token cached, expires at {timestamp}"
+```
+
+**2. Test Repository Access:**
+```bash
+# Push to a PR branch
+# Should see in logs: "Cloning repository to /tmp/..."
+# Should see: "Successfully cloned and checked out to branch {name}"
+```
+
+**3. Verify Comment Posting:**
+- Check that bot comment appears on PR
+- Comment should include file/directory counts
+- Comment should have 🤖 bot indicator
+
+### Common Permission Issues
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `403: Resource not accessible` | Insufficient permissions | Check app has required permissions enabled |
+| `404: Not Found` | App not installed | Install app on repository |
+| `Authentication failed` | Invalid token | Verify private key is correct |
+| `Invalid signature` | Wrong webhook secret | Update `GITHUB_WEBHOOK_SECRET` to match app |
+
+### Configuration Checklist
+
+Before deploying, ensure:
+- [ ] Repository permissions set: Contents (Read), Pull requests (Read & Write)
+- [ ] Subscribed to "Pull request" events
+- [ ] App installed on target repository/organization
+- [ ] Webhook secret configured and matches environment variable
+- [ ] Private key properly encoded and set in environment
 
 ## Webhook Handler: `handle_pr`
 
@@ -316,12 +389,23 @@ docker-compose logs -f
 
 **Problem**: `Authentication failed for repository`
 - **Solution**: Verify GitHub App has repository access
-- **Check**: Installation permissions in GitHub App settings
+- **Check**: Installation permissions - requires **Contents: Read**
 - **Verify**: App is installed on the repository
+- **See**: [GitHub App Permissions](#github-app-permissions) section
+
+**Problem**: `403: Resource not accessible by integration`
+- **Solution**: Missing required permissions
+- **Check**: Repository permissions include Contents (Read) and Pull requests (Read & Write)
+- **Fix**: Update permissions in GitHub App settings → Permissions & events
 
 **Problem**: `Directory already exists`
 - **Solution**: This shouldn't happen with unique SHA-based naming
 - **Debug**: Check cleanup logic in `repo.py`
+
+**Problem**: Cannot post comments to PR
+- **Solution**: Missing Pull requests write permission
+- **Check**: GitHub App has "Pull requests: Read and write" enabled
+- **Verify**: App is installed with correct permissions
 
 ### Test Failures
 
