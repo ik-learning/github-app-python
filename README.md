@@ -33,7 +33,7 @@ pipenv --venv
    - Webhook URL -> our smee.io url `https://smee.io/abc123....`
    - Webhook secret -> `uuid`
 3. Create a private key
-   - Flatten ssh key with `cat <KEY_PATH> | base64`
+   - Base64 pem key `cat <KEY_PATH> | base64`
 4. Install Github App in the Github location of you choice
 5. Build and run
    - `mk docker-compose-up`
@@ -95,6 +95,7 @@ Message templates are stored in `src/constants.py` for easy customization.
 
 ## Resources
 
+- [App Settings](https://github.com/settings/installations/101065354)
 - [Fastapi](https://github.com/fastapi/fastapi)
 - [Fastapi template](https://github.com/fastapi/full-stack-fastapi-template)
 - [Fastapi Github](https://pypi.org/project/fastapi-githubapp/)
@@ -104,6 +105,7 @@ Message templates are stored in `src/constants.py` for easy customization.
 - [Github Python](https://www.geeksforgeeks.org/python/automating-some-git-commands-with-python/)
 - [Github Python:git repo](https://github.com/gitpython-developers/GitPython)
 - [Github PyDriller](https://github.com/ishepard/pydriller)
+- [How to get tokens](https://github.com/marketplace/actions/create-github-app-token#use-app-token-with-actionscheckout)
 
 ### Examples
 

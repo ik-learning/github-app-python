@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 @dataclass
 class PullRequestPayload:
     """Parse and store relevant fields from a GitHub PR webhook payload."""
+    install_id: str
     action: str
     repository: str
     branch: str
@@ -22,6 +23,7 @@ class PullRequestPayload:
         """Create PullRequestPayload from GitHub webhook payload."""
         return cls(
             action=payload.get('action', ''),
+            install_id=payload.get('installation', {}).get('id', ''),
             repository=payload.get('repository', {}).get('full_name', ''),
             branch=payload.get('pull_request', {}).get('head', {}).get('ref', ''),
             commit_sha=payload.get('pull_request', {}).get('head', {}).get('sha', ''),

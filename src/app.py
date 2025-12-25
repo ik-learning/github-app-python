@@ -4,11 +4,21 @@ from datetime import datetime
 from fastapi import FastAPI
 from githubapp import GitHubApp, with_rate_limit_handling
 import logging
-from git import Repo
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import threading
 
-from utils import read_file
+from utils import read_file, json_prettify, analyze_repository_structure
 from model import PullRequestPayload
 from constants import BOT_COMMENT_TEMPLATE
+from cache import TokenCache
+from repo import RepositoryManager
+
+# Thread pool for background tasks
+executor = ThreadPoolExecutor(max_workers=3)
+
+# Token cache instance
+token_cache = TokenCache(buffer_minutes=5)
 
 # Configure logging
 logging.basicConfig(
@@ -44,88 +54,90 @@ github_app.init_app(app, route="/webhooks/github")
 def index():
     return {"status": "ok"}
 
+
+def post_pr_comment(client, pr_data, repo_stats, clone_dir):
+    """
+    Post a summary comment to the pull request.
+
+    Args:
+        client: GitHub API client
+        pr_data: PullRequestPayload object
+        repo_stats: Dictionary with 'file_count' and 'dir_count'
+        clone_dir: Path to cloned repository
+    """
+    owner, repo = pr_data.repository.split('/')
+    current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+
+    comment_body = BOT_COMMENT_TEMPLATE.format(
+        timestamp=current_time,
+        clone_dir=clone_dir,
+        branch=pr_data.branch,
+        file_count=repo_stats['file_count'],
+        dir_count=repo_stats['dir_count']
+    )
+
+    logger.info(f"Posting comment to PR #{pr_data.number}")
+    client.issues.create_comment(
+        owner=owner,
+        repo=repo,
+        issue_number=pr_data.number,
+        body=comment_body
+    )
+    logger.info(f"Successfully posted comment to PR #{pr_data.number}")
+
+
+# Background worker for the heavy processing (runs in thread pool)
+def _process_pr_sync(payload):
+    """
+    Process pull request synchronize event in the background.
+
+    This method orchestrates the following operations:
+    1. Parse webhook payload and extract PR data
+    2. Get or refresh GitHub App installation access token (cached)
+    3. Clone the repository and checkout the PR branch
+    4. Analyze repository structure (count files and directories)
+    5. Post a summary comment to the PR with processing results
+    6. Clean up: delete the cloned repository
+
+    Args:
+        payload: GitHub webhook payload dictionary
+
+    Note:
+        Runs in a background thread via ThreadPoolExecutor.
+        Repository is cloned to /tmp/{repo}-{pr_number}-{short_sha} and deleted after processing.
+    """
+    try:
+        pr_data = PullRequestPayload.from_webhook(payload)
+        token = token_cache.get_token(pr_data.install_id, github_app.get_access_token)
+        client = github_app.client()
+
+        # Setup repository (clone and checkout)
+        repo_manager = RepositoryManager(pr_data, token)
+
+        try:
+            clone_dir = repo_manager.setup()
+            repo_stats = analyze_repository_structure(clone_dir)
+            post_pr_comment(client, pr_data, repo_stats, clone_dir)
+            logger.info(f"Background processing for PR #{pr_data.number} finished successfully")
+        finally:
+            repo_manager.cleanup()
+
+    except Exception:
+        logger.exception("Background PR processing failed")
+
 @github_app.on('pull_request.synchronize')
 @with_rate_limit_handling(github_app)
 def handle_pr():
-    """
-    Handler for when a pull request is synchronized (new commits pushed).
-    """
-    logger.info(f"[PR Event] Processing pull_request.synchronize")
+    # Capture payload immediately to avoid race conditions
+    payload = dict(github_app.payload)
+    # Submit to thread pool for background processing
+    executor.submit(_process_pr_sync, payload)
+    logger.info("PR synchronize event accepted for background processing")
+    return {"status": "accepted"}
 
-    # Parse the webhook payload
-    pr_data = PullRequestPayload.from_webhook(github_app.payload)
-
-    logger.info(f"Repository: {pr_data.repository}")
-    logger.info(f"Branch: {pr_data.branch}")
-    logger.info(f"Commit SHA: {pr_data.commit_sha}")
-    logger.info(f"Sender: {pr_data.sender_login}")
-    logger.info(f"Default Branch: {pr_data.default_branch}")
-    logger.info(f"PR Number: {pr_data.number}")
-
-    # Validate PR state
-    if not pr_data.is_valid_for_processing():
-        logger.warning(
-            f"PR #{pr_data.number} is not valid for processing. "
-            f"State: {pr_data.state}, Merged: {pr_data.merged_at is not None}, "
-            f"Closed: {pr_data.closed_at is not None}"
-        )
-        return
-
-    logger.info(f"PR #{pr_data.number} is valid and ready for processing")
-
-    # Get rate-limited client
-    client = github_app.client()
-
-    # Extract owner and repo from repository full name (format: "owner/repo")
-    owner, repo = pr_data.repository.split('/')
-
-    # Prepare comment body with timestamp
-    current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-    comment_body = BOT_COMMENT_TEMPLATE.format(timestamp=current_time)
-
-    try:
-        client.issues.create_comment(
-            owner=owner,
-            repo=repo,
-            issue_number=pr_data.number,
-            body=comment_body
-        )
-        logger.info(f"Successfully posted comment to PR #{pr_data.number}")
-    except Exception as e:
-        logger.error(f"Failed to post comment to PR #{pr_data.number}: {str(e)}")
-
-    # Clone the repository and checkout to the PR branch
-    # The client is already authenticated with an installation token
-    # Access the token from the client's authorization header
-    try:
-        auth_header = client._session.headers.get('Authorization', '')
-        installation_token = auth_header.replace('token ', '').replace('Bearer ', '')
-        logger.info(f"Successfully extracted installation token (length: {len(installation_token)})")
-    except Exception as e:
-        logger.error(f"Failed to extract installation token from client: {str(e)}")
-        return
-
-    clone_dir = f"/tmp/{repo}-{pr_data.number}"
-
-    try:
-        # Construct authenticated clone URL
-        authenticated_url = pr_data.clone_url.replace(
-            "https://",
-            f"https://x-access-token:{installation_token}@"
-        )
-
-        logger.info(f"Cloning repository to {clone_dir}")
-        repo_obj = Repo.clone_from(authenticated_url, clone_dir)
-
-        # Checkout to the PR branch
-        logger.info(f"Checking out branch: {pr_data.branch}")
-        repo_obj.git.checkout(pr_data.branch)
-
-        logger.info(f"Successfully cloned and checked out to branch {pr_data.branch}")
-
-    except Exception as e:
-        logger.error(f"Failed to clone repository or checkout branch: {str(e)}")
-
+@app.get("/test")
+async def read_root():
+    return {"Hello": "World"}
 
 if __name__ == "__main__":
     import uvicorn
