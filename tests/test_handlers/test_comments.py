@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 @pytest.mark.asyncio
 async def test_handle_pr_comment_added_success(issue_comment_created_payload):
     """Test that handle_pr_comment_added processes comments correctly."""
-    from src.app import handle_pr_comment_added
+    from trash.app import handle_pr_comment_added
 
     result = await handle_pr_comment_added(issue_comment_created_payload)
 
@@ -22,7 +22,7 @@ async def test_handle_pr_comment_added_success(issue_comment_created_payload):
 @pytest.mark.asyncio
 async def test_handle_pr_comment_extracts_comment_body(issue_comment_created_payload):
     """Test that handler extracts comment body correctly."""
-    from src.app import handle_pr_comment_added
+    from trash.app import handle_pr_comment_added
 
     with patch('src.app.logging.getLogger') as mock_logger:
         mock_log_instance = MagicMock()
@@ -39,7 +39,7 @@ async def test_handle_pr_comment_extracts_comment_body(issue_comment_created_pay
 @pytest.mark.asyncio
 async def test_handle_pr_comment_with_slash_command():
     """Test handler with a slash command in comment."""
-    from src.app import handle_pr_comment_added
+    from trash.app import handle_pr_comment_added
 
     payload = {
         "comment": {
@@ -64,7 +64,7 @@ async def test_handle_pr_comment_with_slash_command():
 @pytest.mark.asyncio
 async def test_handle_pr_review_comment_success(pr_review_comment_payload):
     """Test that handle_pr_review_comment processes review comments correctly."""
-    from src.app import handle_pr_review_comment
+    from trash.app import handle_pr_review_comment
 
     result = await handle_pr_review_comment(pr_review_comment_payload)
 
@@ -78,7 +78,7 @@ async def test_handle_pr_review_comment_success(pr_review_comment_payload):
 @pytest.mark.asyncio
 async def test_handle_pr_review_comment_logs_file_path(pr_review_comment_payload):
     """Test that review comment handler logs the file path."""
-    from src.app import handle_pr_review_comment
+    from trash.app import handle_pr_review_comment
 
     with patch('src.app.logging.getLogger') as mock_logger:
         mock_log_instance = MagicMock()
@@ -95,7 +95,7 @@ async def test_handle_pr_review_comment_logs_file_path(pr_review_comment_payload
 @pytest.mark.asyncio
 async def test_comment_handler_with_minimal_payload():
     """Test comment handler with minimal payload."""
-    from src.app import handle_pr_comment_added
+    from trash.app import handle_pr_comment_added
 
     minimal_payload = {
         "comment": {"body": "test", "user": {"login": "user"}},

@@ -102,10 +102,11 @@ Shared fixtures are defined in `conftest.py`:
 ```python
 import pytest
 
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_handler(pr_opened_payload):
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     result = await handle_pr_created(pr_opened_payload)
 

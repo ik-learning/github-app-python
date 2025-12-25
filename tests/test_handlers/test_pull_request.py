@@ -1,6 +1,6 @@
 """Unit tests for pull request event handlers."""
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.unit
@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 async def test_handle_pr_created_success(pr_opened_payload):
     """Test that handle_pr_created processes PR opened events correctly."""
     # Import the handler
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     # Call the handler
     result = await handle_pr_created(pr_opened_payload)
@@ -24,7 +24,7 @@ async def test_handle_pr_created_success(pr_opened_payload):
 @pytest.mark.asyncio
 async def test_handle_pr_created_extracts_correct_data(pr_opened_payload):
     """Test that handler extracts correct data from payload."""
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     # Mock logger to capture log calls
     with patch('src.app.logging.getLogger') as mock_logger:
@@ -47,7 +47,7 @@ async def test_handle_pr_created_extracts_correct_data(pr_opened_payload):
 @pytest.mark.asyncio
 async def test_handle_pr_created_with_missing_fields():
     """Test handler with minimal/missing payload fields."""
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     minimal_payload = {
         "action": "opened",
@@ -69,7 +69,7 @@ async def test_handle_pr_created_with_missing_fields():
 @pytest.mark.asyncio
 async def test_handle_pr_created_returns_dict():
     """Test that handler returns a dictionary."""
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     payload = {
         "pull_request": {"number": 999, "user": {}},
@@ -87,7 +87,7 @@ async def test_handle_pr_created_returns_dict():
 @pytest.mark.asyncio
 async def test_pr_edited_success(pr_edited_payload):
     """Test that handle_pr_edited processes PR edited events correctly."""
-    from src.app import handle_pr_edited
+    from trash.app import handle_pr_edited
 
     result = await handle_pr_edited(pr_edited_payload)
 
@@ -103,7 +103,7 @@ async def test_pr_edited_success(pr_edited_payload):
 @pytest.mark.asyncio
 async def test_pr_edited_tracks_changes(pr_edited_payload):
     """Test that handler tracks what fields changed."""
-    from src.app import handle_pr_edited
+    from trash.app import handle_pr_edited
 
     with patch('src.app.logging.getLogger') as mock_logger:
         mock_log_instance = MagicMock()
@@ -125,7 +125,7 @@ async def test_pr_edited_tracks_changes(pr_edited_payload):
 @pytest.mark.asyncio
 async def test_pr_edited_with_title_change_only():
     """Test handler when only title is changed."""
-    from src.app import handle_pr_edited
+    from trash.app import handle_pr_edited
 
     payload = {
         "action": "edited",
@@ -152,7 +152,7 @@ async def test_pr_edited_with_title_change_only():
 @pytest.mark.asyncio
 async def test_pr_with_real_payload(pr_opened_real_payload):
     """Test handler with real GitHub webhook payload."""
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     result = await handle_pr_created(pr_opened_real_payload)
 

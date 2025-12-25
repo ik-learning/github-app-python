@@ -8,6 +8,7 @@ fastapi = "*"
 uvicorn = "*"
 fastapi-githubapp = "*"
 gunicorn = "*"
+GitPython = "*"
 
 [dev-packages]
 pytest = "*"

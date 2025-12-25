@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 @pytest.mark.asyncio
 async def test_handle_push_new_branch(load_fixture):
     """Test push event when creating a new branch."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = load_fixture("push_new_branch.json")
     result = await handle_push(payload)
@@ -26,7 +26,7 @@ async def test_handle_push_new_branch(load_fixture):
 @pytest.mark.asyncio
 async def test_handle_push_to_main(load_fixture):
     """Test regular push to main branch."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = load_fixture("push_to_main.json")
     result = await handle_push(payload)
@@ -45,7 +45,7 @@ async def test_handle_push_to_main(load_fixture):
 @pytest.mark.asyncio
 async def test_handle_push_force(load_fixture):
     """Test force push event."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = load_fixture("push_force.json")
 
@@ -68,7 +68,7 @@ async def test_handle_push_force(load_fixture):
 @pytest.mark.asyncio
 async def test_handle_push_extracts_branch_name(load_fixture):
     """Test that handler correctly extracts branch name from ref."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = load_fixture("push_to_main.json")
     result = await handle_push(payload)
@@ -81,7 +81,7 @@ async def test_handle_push_extracts_branch_name(load_fixture):
 @pytest.mark.asyncio
 async def test_handle_push_logs_commit_details(load_fixture):
     """Test that push handler logs commit information."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = load_fixture("push_to_main.json")
 
@@ -101,7 +101,7 @@ async def test_handle_push_logs_commit_details(load_fixture):
 @pytest.mark.asyncio
 async def test_handle_push_with_many_commits():
     """Test push with more than 3 commits (should truncate log)."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = {
         "ref": "refs/heads/main",
@@ -135,7 +135,7 @@ async def test_handle_push_with_many_commits():
 @pytest.mark.asyncio
 async def test_handle_push_branch_deleted():
     """Test push event when deleting a branch."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = {
         "ref": "refs/heads/old-branch",
@@ -162,7 +162,7 @@ async def test_handle_push_branch_deleted():
 @pytest.mark.asyncio
 async def test_handle_push_return_structure():
     """Test that push handler returns correct structure."""
-    from src.app import handle_push
+    from trash.app import handle_push
 
     payload = {
         "ref": "refs/heads/test",

@@ -548,27 +548,32 @@ async def test_pr_opened_extracts_info(pr_handler, pr_opened_payload):
 ### 2. Integration Tests
 
 **tests/test_app.py:**
+
 ```python
 import pytest
 from fastapi.testclient import TestClient
-from src.app import app
+from trash.app import app
 import hmac
 import hashlib
+
 
 @pytest.fixture
 def client():
     return TestClient(app)
+
 
 def create_signature(payload: bytes, secret: str) -> str:
     """Create GitHub webhook signature."""
     mac = hmac.new(secret.encode(), msg=payload, digestmod=hashlib.sha256)
     return f"sha256={mac.hexdigest()}"
 
+
 def test_health_check(client):
     """Test health check endpoint."""
     response = client.get("/status")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
 
 def test_webhook_with_valid_signature(client, pr_opened_payload):
     """Test webhook endpoint with valid signature."""
@@ -587,6 +592,7 @@ def test_webhook_with_valid_signature(client, pr_opened_payload):
     )
 
     assert response.status_code == 200
+
 
 def test_webhook_with_invalid_signature(client):
     """Test webhook endpoint rejects invalid signature."""

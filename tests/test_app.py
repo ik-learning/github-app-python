@@ -1,7 +1,7 @@
 """Integration tests for the FastAPI application."""
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import os
 
 
@@ -20,7 +20,7 @@ def mock_env_vars():
 def client(mock_env_vars):
     """Create a test client for the FastAPI app."""
     # Import app after env vars are set
-    from src.app import app
+    from trash.app import app
     return TestClient(app)
 
 
@@ -57,7 +57,7 @@ def test_app_has_webhook_route(client):
 @pytest.mark.integration
 def test_fastapi_app_configuration(mock_env_vars):
     """Test that FastAPI app is configured correctly."""
-    from src.app import app
+    from trash.app import app
 
     assert app is not None
     assert app.title == "FastAPI"  # Default FastAPI title
@@ -66,7 +66,7 @@ def test_fastapi_app_configuration(mock_env_vars):
 @pytest.mark.integration
 def test_github_app_initialization(mock_env_vars):
     """Test that GitHubApp is initialized with correct parameters."""
-    from src.app import github_app
+    from trash.app import github_app
 
     assert github_app is not None
 
@@ -78,8 +78,8 @@ def test_environment_variable_validation():
         with pytest.raises(ValueError, match="Missing required environment variables"):
             # Force reimport to trigger validation
             import importlib
-            import src.app
-            importlib.reload(src.app)
+            import trash.app
+            importlib.reload(trash.app)
 
 
 @pytest.mark.integration
@@ -87,7 +87,7 @@ def test_base64_private_key_decoding(mock_env_vars):
     """Test that base64 private key is decoded correctly."""
     # The app should successfully decode the base64 key
     # If it fails, app import would fail
-    from src.app import app
+    from trash.app import app
     assert app is not None
 
 

@@ -213,7 +213,7 @@ make test-watch
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_handle_pr_created_success(pr_opened_payload):
-    from src.app import handle_pr_created
+    from trash.app import handle_pr_created
 
     result = await handle_pr_created(pr_opened_payload)
 
