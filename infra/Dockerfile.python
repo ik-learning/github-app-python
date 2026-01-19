@@ -1,0 +1,11 @@
+# docker build -f Dockerfile.deps -t detect-deps .
+# docker run --rm -it -p detect-deps
+FROM python:3.14
+
+WORKDIR /app
+
+# Copy python dependencies
+COPY Pipfile Pipfile.lock ./
+
+RUN pip install --root-user-action ignore pipenv
+RUN pipenv install --deploy --ignore-pipfile
