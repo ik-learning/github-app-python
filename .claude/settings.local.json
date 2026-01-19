@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(make docker-run:*)",
+      "Bash(echo:*)",
+      "Bash(docker run:*)",
+      "WebSearch",
+      "WebFetch(domain:pypi.org)",
+      "Bash(python -m pytest:*)",
+      "WebFetch(domain:detect.synopsys.com)",
+      "WebFetch(domain:documentation.blackduck.com)",
+      "WebFetch(domain:polaris.blackduck.com)"
+    ]
+  }
+}
