@@ -1,6 +1,6 @@
-# docker build -f Dockerfile.deps -t detect-deps .
-# docker run --rm -it -p detect-deps
-FROM python:3.14
+# docker build -f Dockerfile.deps -t python-deps .
+# docker run --rm -it -p python-deps
+FROM python:3-slim
 
 WORKDIR /app
 

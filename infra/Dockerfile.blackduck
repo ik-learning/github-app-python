@@ -1,0 +1,25 @@
+# docker build -f infra/Dockerfile.bluckdack -t blackduck-deps .
+# docker run --rm -it -p blackduck-deps
+FROM python-deps:latest
+
+ARG DETECT_VERSION=11.1.0
+
+RUN apt-get update && apt-get install -y \
+    default-jre-headless \
+    git curl ca-certificates unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /root/.blackduck/bridge/tools/blackduck-detect/${DETECT_VERSION} \
+    && curl -fLsS -L \
+    https://repo.blackduck.com/artifactory/bds-integrations-release/com/blackduck/integration/detect/${DETECT_VERSION}/detect-${DETECT_VERSION}.jar \
+    -o /root/.blackduck/bridge/tools/blackduck-detect/${DETECT_VERSION}/detect-${DETECT_VERSION}.jar
+
+# Install bridge-cli thin client
+RUN curl -fLsS -L \
+    https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-thin-client/latest/bridge-cli-linux_arm.zip \
+    -o /tmp/bridge-cli.zip \
+    && unzip /tmp/bridge-cli.zip -d /opt/bridge-cli \
+    && rm /tmp/bridge-cli.zip \
+    && chmod +x /opt/bridge-cli/bridge-cli
+
+ENV PATH="/opt/bridge-cli:${PATH}"
