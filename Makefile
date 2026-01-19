@@ -17,20 +17,7 @@ pre-commit-validate: ## Validate files with pre-commit hooks
 
 -include infra/helpers.mk
 
-#? docker-build: Build the Docker image for the GitHub App (--no-cache option can be added if needed)
-docker-build:
-	docker build -t githubapp --progress plain  .
-
-#? docker-run: Run the Docker container for the GitHub App
-docker-run:
-	@docker run --rm -it -p 8080:8000 \
-		-e GITHUB_APP_ID=$(GITHUB_APP_ID) \
-		-e GITHUB_APP_PRIVATE_KEY=$(GITHUB_APP_PRIVATE_KEY) \
-		-e GITHUB_WEBHOOK_SECRET=$(GITHUB_WEBHOOK_SECRET) \
-		githubapp
-
-#? docker-compose-up: Start the Docker containers using docker-compose
-docker-compose-up:
+run-all: ## Start the Docker containers
 	docker-compose up --build
 
 docker-compose-down:
@@ -55,3 +42,6 @@ run-black-duck-scan:
 	@docker run --rm -it -e BRIDGE_BLACKDUCKSCA_TOKEN=$(BRIDGE_BLACKDUCKSCA_TOKEN) \
 		-v $(PWD)/input:/scan/input \
 		detect-deps
+
+compose-restart: ## Rebuild and restart multiple services
+	@docker compose -f docker-compose.yaml up -d --build api

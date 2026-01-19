@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: services/api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8000"
+    environment:
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+    networks:
+    - github-app-network
+
+  # smee:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.smee
+  #   environment:
+  #     - SMEE_URL=${SMEE_URL}
+  #     - SMEE_TARGET=${SMEE_TARGET}
+  #     - WEBHOOK_PROXY_URL=${SMEE_URL}
+  #   networks:
+  #   - github-app-network
+
+networks:
+  github-app-network:
+    driver: bridge
