@@ -13,6 +13,20 @@ services:
     networks:
     - github-app-network
 
+  worker-1:
+    build:
+      context: services/workers/blackduck
+      dockerfile: Dockerfile
+    container_name: worker-1
+    ports:
+      - "8090:8000"
+    environment:
+      - STREAM_NAME=worker-1
+      - REDIS_HOST=redis
+      - APP_NAME=blackduck-worker
+    networks:
+    - github-app-network
+
   smee:
     image: "nodejs-smee:latest"
     container_name: smee

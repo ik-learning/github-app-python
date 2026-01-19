@@ -45,3 +45,4 @@ run-black-duck-scan:
 
 compose-restart: ## Rebuild and restart multiple services
 	@docker compose -f docker-compose.yaml up -d --build api
+	@docker compose -f docker-compose.yaml up -d --build worker-1
