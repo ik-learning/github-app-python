@@ -9,6 +9,7 @@ services:
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - REDIS_HOST=redis
     networks:
     - github-app-network
 
@@ -34,6 +35,23 @@ services:
     command: redis-server --appendonly yes
     # volumes:
     #   - redis-data:/data
+
+  # localhost:5540 for RedisInsight UI
+  # docker compose up -d redis-insight --force-recreate
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    restart: always
+    ports:
+      - "5540:5540"
+    networks:
+      - github-app-network
+    environment:
+      - REDISINSIGHT_HOST=0.0.0.0
+      - RI_APP_EULA_ACCEPTED=true
+      - RI_REDIS_HOST=redis
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=local-redis
 
 networks:
   github-app-network:

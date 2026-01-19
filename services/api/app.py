@@ -1,4 +1,6 @@
 import os
+import json
+import redis
 from fastapi import FastAPI
 from githubapp import GitHubApp, with_rate_limit_handling
 import logging
@@ -34,9 +36,38 @@ github_app = GitHubApp(
 
 github_app.init_app(app, route="/webhooks/github")
 
+Redis = redis.Redis(
+            host=os.getenv("REDIS_HOST", "localhost"),
+            port=int(os.getenv("REDIS_PORT", 6379)),
+            decode_responses=True
+        )
+
 @app.get("/status")
 def index():
-    return {"status": "ok"}
+    try:
+        Redis.ping()
+        redis_status = "ok"
+    except redis.ConnectionError:
+        redis_status = "error"
+    return {"status": "ok", "redis": redis_status}
+
+@app.post("/fanout")
+def fanout():
+    message = {
+        "name": "repo",
+        "owner": "octocat",
+        "branch": "feature-branch",
+        "prId": 42
+    }
+
+    streams = ["worker-1", "worker-2", "worker-3"]
+    r = Redis
+
+    for stream in streams:
+        r.xadd(stream, {"data": json.dumps(message)})
+        logger.info(f"Message sent to stream: {stream}")
+
+    return {"status": "ok", "streams": streams}
 
 @github_app.on('pull_request.opened')
 @github_app.on('pull_request.synchronize')
