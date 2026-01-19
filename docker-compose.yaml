@@ -12,16 +12,28 @@ services:
     networks:
     - github-app-network
 
-  # smee:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.smee
-  #   environment:
-  #     - SMEE_URL=${SMEE_URL}
-  #     - SMEE_TARGET=${SMEE_TARGET}
-  #     - WEBHOOK_PROXY_URL=${SMEE_URL}
-  #   networks:
-  #   - github-app-network
+  smee:
+    image: "nodejs-smee:latest"
+    container_name: smee
+    environment:
+      - SMEE_URL=${SMEE_URL}
+      - SMEE_TARGET=${SMEE_TARGET}
+      - WEBHOOK_PROXY_URL=${SMEE_URL}
+    networks:
+    - github-app-network
+
+  redis:
+    image: "redis:8"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - github-app-network
+    # We’ve enabled persistence in Redis by using the append-only file (AOF) feature.
+    command: redis-server --appendonly yes
+    # volumes:
+    #   - redis-data:/data
 
 networks:
   github-app-network:
