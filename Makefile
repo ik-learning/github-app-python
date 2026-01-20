@@ -43,6 +43,6 @@ run-black-duck-scan:
 		-v $(PWD)/input:/scan/input \
 		detect-deps
 
-compose-restart: ## Rebuild and restart multiple services
-	@docker compose -f docker-compose.yaml up -d --build api
-	@docker compose -f docker-compose.yaml up -d --build worker-1
+compose-restart: ## Rebuild and restart multiple services --build
+	@docker compose -f docker-compose.yaml up -d api --build
+	@docker compose -f docker-compose.yaml up -d worker-1 --build

@@ -13,6 +13,7 @@ services:
     networks:
     - github-app-network
 
+  # docker compose -f docker-compose.yaml up -d --build worker-1
   worker-1:
     build:
       context: services/workers/blackduck

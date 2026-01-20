@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 import redis
 from fastapi import FastAPI
 from githubapp import GitHubApp, with_rate_limit_handling
@@ -53,21 +54,32 @@ def index():
 
 @app.post("/fanout")
 def fanout():
+    trace_id = str(uuid.uuid7())
     message = {
+        "trace_id": trace_id,
         "name": "repo",
         "owner": "octocat",
         "branch": "feature-branch",
-        "prId": 42
+        "prId": 42,
+        "callbackUrl": "http://api:8000/callback"
     }
 
     streams = ["worker-1", "worker-2", "worker-3"]
-    r = Redis
 
     for stream in streams:
-        r.xadd(stream, {"data": json.dumps(message)})
-        logger.info(f"Message sent to stream: {stream}")
+        Redis.xadd(stream, {"data": json.dumps(message)})
+        logger.debug(f"Message sent to stream: {stream} with trace_id: {trace_id}")
 
-    return {"status": "ok", "streams": streams}
+    return {"status": "ok", "streams": streams, "trace_id": trace_id}
+
+
+@app.post("/callback")
+def callback(payload: dict):
+    trace_id = payload.get("trace_id")
+    msg_base64 = payload.get("msg_base64")
+    logger.info(f"Callback received - trace_id: {trace_id}, msg_base64: {msg_base64}")
+    return {"status": "ok", "trace_id": trace_id}
+
 
 @github_app.on('pull_request.opened')
 @github_app.on('pull_request.synchronize')
