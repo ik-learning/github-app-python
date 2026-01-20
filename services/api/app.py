@@ -7,6 +7,7 @@ from githubapp import GitHubApp, with_rate_limit_handling
 import logging
 
 from utils import read_file, decode_base64_key
+from model import StoragePayload
 
 # Configure logging
 logging.basicConfig(
@@ -91,11 +92,11 @@ def callback(payload: dict):
     # Read storage data by id
     storage_data = Redis.get(f"storage:{id}")
     if storage_data:
-        storage = json.loads(storage_data)
-        logger.info(f"Callback from {app_name} - name: {storage['name']}, owner: {storage['owner']}, branch: {storage['branch']}")
+        storage = StoragePayload.from_json(storage_data)
+        logger.info(f"Callback from {app_name} - name: {storage.name}, owner: {storage.owner}, branch: {storage.branch}")
         logger.info(f"Message: {msg_base64}")
     else:
-        logger.warning(f"Callback from {app_name} - no storage found for id: {id}, msg: {msg}")
+        logger.warning(f"Callback from {app_name} - no storage found for id: {id}")
 
     return {"status": "ok", "id": id}
 

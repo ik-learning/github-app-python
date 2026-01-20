@@ -1,12 +1,14 @@
 import os
 import base64
+import random
+import time
 import redis
 import requests
 import threading
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from model import MessagePayload
+from model import MessagePayload, StoragePayload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,15 +30,15 @@ CONSUMER_GROUP = os.getenv("CONSUMER_GROUP", "workers")
 CONSUMER_NAME = os.getenv("CONSUMER_NAME", APP_NAME or "consumer-1")
 
 
-def send_callback(callback_url: str, trace_id: str):
-    msg = f"hello from {APP_NAME}"
+def send_callback(callback_url: str, id: str, msg: str):
     payload = {
-        "trace_id": trace_id,
-        "msg_base64": base64.b64encode(msg.encode()).decode()
+        "id": id,
+        "msg_base64": base64.b64encode(msg.encode()).decode(),
+        "app_name": APP_NAME
     }
     try:
         response = requests.post(callback_url, json=payload, timeout=10)
-        logger.debug(f"[{APP_NAME}] Callback sent to {callback_url}: {response.status_code}")
+        logger.info(f"[{APP_NAME}] Callback sent to {callback_url}: {response.status_code}")
     except requests.RequestException as e:
         logger.error(f"[{APP_NAME}] Callback failed: {e}")
 
@@ -53,7 +55,6 @@ def ensure_consumer_group():
 
 
 def stream_listener():
-    import time
     ensure_consumer_group()
     logger.info(f"[{APP_NAME}] Starting stream listener for: {STREAM_NAME}")
 
@@ -69,12 +70,28 @@ def stream_listener():
             if messages:
                 for stream, entries in messages:
                     for entry_id, data in entries:
-                        logger.info(data)
+                        # 1. Read from worker stream
                         msg = MessagePayload.message(data)
                         logger.info(f"[{APP_NAME}] Received message: {msg}")
-                        # Send callback on completion
-                        if msg.callbackUrl:
-                            send_callback(msg.callbackUrl, msg.trace_id)
+
+                        # 2. Fetch details from storage
+                        storage_data = Redis.get(f"storage:{msg.id}")
+                        if storage_data:
+                            storage = StoragePayload.from_json(storage_data)
+                            logger.info(f"[{APP_NAME}] Fetched storage: name={storage.name}, owner={storage.owner}, branch={storage.branch}")
+                        else:
+                            logger.warning(f"[{APP_NAME}] No storage found for id: {msg.id}")
+
+                        # 3. Process - random wait 5-10 seconds
+                        wait_time = random.randint(5, 10)
+                        logger.info(f"[{APP_NAME}] Processing... waiting {wait_time}s")
+                        time.sleep(wait_time)
+
+                        # 4. Reply with id, msg_base64, app_name to /callback
+                        if msg.callback_url:
+                            result_msg = f"Processed by {APP_NAME}: {storage.name}/{storage.branch}" if storage_data else f"Processed by {APP_NAME}"
+                            send_callback(msg.callback_url, msg.id, result_msg)
+
                         # Acknowledge and delete after processing
                         Redis.xack(STREAM_NAME, CONSUMER_GROUP, entry_id)
                         Redis.xdel(STREAM_NAME, entry_id)
