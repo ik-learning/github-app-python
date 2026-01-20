@@ -54,31 +54,50 @@ def index():
 
 @app.post("/fanout")
 def fanout():
-    trace_id = str(uuid.uuid7())
-    message = {
-        "trace_id": trace_id,
+    id = str(uuid.uuid7())
+    storage = {
+        "id": id,
         "name": "repo",
         "owner": "octocat",
         "branch": "feature-branch",
         "prId": 42,
-        "callbackUrl": "http://api:8000/callback"
     }
 
-    streams = ["worker-1", "worker-2", "worker-3"]
+    worker = {
+        "id": id,
+        "callback_url": "http://api:8000/callback"
+    }
+
+    # Store the full payload in Redis for long storage
+    Redis.set(f"storage:{id}", json.dumps(storage))
+    logger.debug(f"Storage saved with key: storage:{id}")
+
+    # "worker-2", "worker-3"
+    streams = ["worker-1"]
 
     for stream in streams:
-        Redis.xadd(stream, {"data": json.dumps(message)})
-        logger.debug(f"Message sent to stream: {stream} with trace_id: {trace_id}")
+        Redis.xadd(stream, {"data": json.dumps(worker)})
+        logger.debug(f"Message sent to stream: {stream} with id: {id}")
 
-    return {"status": "ok", "streams": streams, "trace_id": trace_id}
+    return {"status": "ok", "streams": streams, "id": id}
 
 
 @app.post("/callback")
 def callback(payload: dict):
-    trace_id = payload.get("trace_id")
+    id = payload.get("id")
+    app_name = payload.get("app_name")
     msg_base64 = payload.get("msg_base64")
-    logger.info(f"Callback received - trace_id: {trace_id}, msg_base64: {msg_base64}")
-    return {"status": "ok", "trace_id": trace_id}
+
+    # Read storage data by id
+    storage_data = Redis.get(f"storage:{id}")
+    if storage_data:
+        storage = json.loads(storage_data)
+        logger.info(f"Callback from {app_name} - name: {storage['name']}, owner: {storage['owner']}, branch: {storage['branch']}")
+        logger.info(f"Message: {msg_base64}")
+    else:
+        logger.warning(f"Callback from {app_name} - no storage found for id: {id}, msg: {msg}")
+
+    return {"status": "ok", "id": id}
 
 
 @github_app.on('pull_request.opened')
@@ -87,7 +106,7 @@ def callback(payload: dict):
 def handle_pr():
     # Capture payload immediately to avoid race conditions
     payload = dict(github_app.payload)
-    print(payload)
+    print("payload ->> ", payload)
     # Submit to a worker for background processing
     logger.info("PR event accepted for background processing")
     # make request to redis queue
