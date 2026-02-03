@@ -1,6 +1,5 @@
 import os
 import sys
-import signal
 import time
 import redis
 import threading
@@ -39,6 +38,9 @@ Redis = redis.Redis(
 CONSUMER_GROUP = os.getenv("CONSUMER_GROUP", "workers")
 CONSUMER_NAME = os.getenv("CONSUMER_NAME", APP_NAME or "consumer-1")
 
+# Event to signal shutdown from worker thread to main thread
+shutdown_event = threading.Event()
+
 
 def ensure_consumer_group():
     try:
@@ -57,7 +59,7 @@ def stream_listener():
 
     processor = Processor(APP_NAME, Redis)
 
-    while True:
+    while not shutdown_event.is_set():
         try:
             logger.debug(f"[{APP_NAME}] Waiting for messages on {STREAM_NAME}...")
             messages = Redis.xreadgroup(
@@ -76,8 +78,9 @@ def stream_listener():
                         Redis.xack(STREAM_NAME, CONSUMER_GROUP, entry_id)
                         Redis.xdel(STREAM_NAME, entry_id)
                         logger.info(f"[{APP_NAME}] Processed and removed: {entry_id}")
-                        logger.info(f"[{APP_NAME}] Job complete, exiting for clean restart...")
-                        os.kill(os.getpid(), signal.SIGTERM)
+                        logger.info(f"[{APP_NAME}] Job complete, signaling shutdown...")
+                        shutdown_event.set()
+                        return
             else:
                 logger.debug(f"[{APP_NAME}] No messages, continuing...")
         except redis.ConnectionError as e:
@@ -88,10 +91,27 @@ def stream_listener():
             time.sleep(1)
 
 
+def shutdown_watcher():
+    """Watch for shutdown event and kill the process."""
+    import signal
+    shutdown_event.wait()
+    logger.info(f"[{APP_NAME}] Shutdown event received, killing process...")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    time.sleep(0.5)  # Allow logs to flush
+    os.kill(os.getpid(), signal.SIGKILL)  # Hard kill, no cleanup
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    thread = threading.Thread(target=stream_listener, daemon=True)
-    thread.start()
+    # Start stream listener thread
+    listener_thread = threading.Thread(target=stream_listener, daemon=True)
+    listener_thread.start()
+
+    # Start shutdown watcher thread (non-daemon so it can exit the process)
+    watcher_thread = threading.Thread(target=shutdown_watcher, daemon=False)
+    watcher_thread.start()
+
     logger.info(f"Worker started, listening on stream: {STREAM_NAME}")
     yield
 
