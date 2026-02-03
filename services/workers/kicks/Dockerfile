@@ -10,4 +10,4 @@ WORKDIR $APP_HOME
 COPY . ${APP_HOME}/
 EXPOSE 8080
 
-CMD ["pipenv", "run", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--reload"]
+CMD ["pipenv", "run", "python", "app.py"]

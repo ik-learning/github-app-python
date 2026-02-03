@@ -15,7 +15,10 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:docs.kics.io)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(vm_stat:*)",
+      "Bash(chmod:*)",
+      "Bash(docker ps:*)"
     ]
   }
 }
