@@ -28,6 +28,8 @@ class StoragePayload:
     owner: str
     branch: str
     prId: int
+    commit_sha: str
+    installation_id: int
 
     @classmethod
     def from_json(cls, data: str) -> 'StoragePayload':
@@ -38,5 +40,7 @@ class StoragePayload:
             name=parsed.get('name', ''),
             owner=parsed.get('owner', ''),
             branch=parsed.get('branch', ''),
-            prId=parsed.get('prId', 0)
+            prId=parsed.get('prId', 0),
+            commit_sha=parsed.get('commit_sha', ''),
+            installation_id=parsed.get('installation_id', 0)
         )

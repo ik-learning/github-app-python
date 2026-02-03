@@ -19,6 +19,7 @@ services:
       context: services/workers/blackduck
       dockerfile: Dockerfile
     container_name: worker-1
+    restart: always
     ports:
       - "8090:8000"
     environment:
@@ -34,6 +35,7 @@ services:
       context: services/workers/kicks
       dockerfile: Dockerfile
     container_name: worker-kics
+    restart: always
     ports:
       - "8091:8000"
     environment:
