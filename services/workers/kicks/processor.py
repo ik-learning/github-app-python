@@ -55,7 +55,7 @@ class Processor:
             # 2. Clone repository (use test repo if TEST_MODE enabled)
             if TEST_MODE:
                 test_repo = random.choice(TEST_REPOS)
-                logger.info(f"[{self.app_name}] TEST_MODE: using {test_repo['owner']}/{test_repo['name']}")
+                logger.info(f"[{self.app_name}] TEST_MODE: scanning {test_repo['owner']}/{test_repo['name']}, posting to {storage.owner}/{storage.name}")
                 ctx = github.clone(
                     owner=test_repo["owner"],
                     name=test_repo["name"],
@@ -63,6 +63,9 @@ class Processor:
                     pr_id=storage.prId,
                     commit_sha=storage.commit_sha
                 )
+                # Override owner/name for posting to original repo
+                ctx.owner = storage.owner
+                ctx.name = storage.name
             else:
                 ctx = github.clone(
                     owner=storage.owner,

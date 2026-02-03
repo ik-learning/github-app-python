@@ -14,7 +14,7 @@ services:
     - github-app-network
 
   # docker compose -f docker-compose.yaml up -d --build worker-1
-  worker-1:
+  worker-blackduck:
     build:
       context: services/workers/blackduck
       dockerfile: Dockerfile
@@ -26,6 +26,7 @@ services:
       - STREAM_NAME=worker-1
       - REDIS_HOST=redis
       - APP_NAME=blackduck-worker
+      - TEST_MODE=true  # Use public repos for testing
     networks:
     - github-app-network
 
@@ -42,6 +43,7 @@ services:
       - STREAM_NAME=worker-kics
       - REDIS_HOST=redis
       - APP_NAME=kics-worker
+      - TEST_MODE=true  # Use public repos for testing
     networks:
     - github-app-network
 
@@ -98,7 +100,7 @@ services:
     networks:
       - github-app-network
     volumes:
-      - ./infra/neo4j/style.grass:/var/lib/neo4j/import/style.grass:ro
+      - ./infra/neo4j:/opt/neo4j-custom:ro
     environment:
       # Authentication
       # - NEO4J_AUTH=neo4j/naglfar123

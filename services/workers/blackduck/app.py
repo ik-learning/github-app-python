@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import redis
 import threading
@@ -7,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from model import MessagePayload
 from processor import Processor
+from scan import check_blackduck_installed, BlackduckNotFoundError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,8 +17,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("Starting Blackduck Worker...")
 
+# Check Blackduck is installed on startup
+try:
+    blackduck_version = check_blackduck_installed()
+    logger.info(f"Blackduck check passed: {blackduck_version}")
+except BlackduckNotFoundError as e:
+    logger.error(f"Blackduck not found: {e}")
+    logger.error("Worker cannot start without Blackduck CLI. Exiting.")
+    sys.exit(1)
+
 STREAM_NAME = os.getenv("STREAM_NAME", "worker-1")
-APP_NAME = os.getenv("APP_NAME")
+APP_NAME = os.getenv("APP_NAME", "blackduck-worker")
 
 Redis = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
@@ -48,7 +59,6 @@ def stream_listener():
     while True:
         try:
             logger.debug(f"[{APP_NAME}] Waiting for messages on {STREAM_NAME}...")
-            # ">" means read only new messages not yet delivered to other consumers
             messages = Redis.xreadgroup(
                 CONSUMER_GROUP, CONSUMER_NAME,
                 {STREAM_NAME: ">"},
@@ -99,7 +109,8 @@ def status():
             "status": "ok",
             "redis": redis_status,
             "stream": STREAM_NAME,
-            "app": APP_NAME
+            "app": APP_NAME,
+            "blackduck_version": blackduck_version
         }
 
 

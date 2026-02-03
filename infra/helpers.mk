@@ -14,3 +14,7 @@ docker-blackduck: ## Build dockerfile.blackduck to create blackduck client image
 
 docker-kicks: ## Build dockerfile.kicks to create kicks client image
 	@docker build -f $(INFRA_DIR)/Dockerfile.kicks -t kicks-deps .
+
+compose-worker-restart: ## Rebuild and restart multiple services
+	@docker compose up -d --build worker-blackduck
+	@docker compose up -d --build worker-kicks

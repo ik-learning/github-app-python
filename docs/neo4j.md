@@ -186,7 +186,7 @@ relationship.HAS_CVE {
 
 ### From Docker Container (Recommended)
 
-The stylesheet is mounted at `/var/lib/neo4j/import/style.grass` in the container.
+The stylesheet is mounted at `/opt/neo4j-custom/style.grass` in the container.
 
 1. Open Neo4j Browser: http://localhost:7474
 2. Type `:style` and press Enter
@@ -194,7 +194,7 @@ The stylesheet is mounted at `/var/lib/neo4j/import/style.grass` in the containe
 
 Or copy from container:
 ```bash
-docker cp neo4j:/var/lib/neo4j/import/style.grass ./style.grass
+docker cp neo4j:/opt/neo4j-custom/style.grass ./style.grass
 ```
 
 ### Manual Import
