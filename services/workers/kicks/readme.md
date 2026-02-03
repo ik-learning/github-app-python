@@ -2,6 +2,11 @@
 
 Security scanning worker that runs [KICS](https://kics.io/) (Keeping Infrastructure as Code Secure) scans on repositories.
 
+- https://docs.kics.io/dev/getting-started/
+- https://docs.kics.io/latest/getting-started/
+- https://hub.docker.com/r/checkmarx/kics
+- https://github.com/Checkmarx/kics/blob/master/Dockerfile
+
 ## Architecture
 
 ```

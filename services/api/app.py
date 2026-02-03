@@ -54,14 +54,18 @@ def index():
     return {"status": "ok", "redis": redis_status}
 
 @app.post("/fanout")
-def fanout():
+def fanout(payload: dict = None):
+    payload = payload or {}
+
     id = str(uuid.uuid7())
     storage = {
         "id": id,
-        "name": "repo",
-        "owner": "octocat",
-        "branch": "feature-branch",
-        "prId": 42,
+        "name": payload.get("repo", "test-repo"),
+        "owner": payload.get("owner", "test-owner"),
+        "branch": payload.get("branch", "main"),
+        "prId": payload.get("prId", 1),
+        "commit_sha": payload.get("commit_sha") or uuid.uuid4().hex[:40],
+        "installation_id": payload.get("installation_id", 0),
     }
 
     worker = {
@@ -71,16 +75,20 @@ def fanout():
 
     # Store the full payload in Redis for long storage
     Redis.set(f"storage:{id}", json.dumps(storage))
-    logger.debug(f"Storage saved with key: storage:{id}")
+    logger.info(f"Storage saved with key: storage:{id}")
 
-    # "worker-2", "worker-3"
-    streams = ["worker-1"]
+    # Default streams or custom from payload
+    streams_param = payload.get("streams", "")
+    if streams_param:
+        streams = [s.strip() for s in streams_param.split(",")]
+    else:
+        streams = ["worker-blackduck", "worker-kics"]
 
     for stream in streams:
         Redis.xadd(stream, {"data": json.dumps(worker)})
-        logger.debug(f"Message sent to stream: {stream} with id: {id}")
+        logger.info(f"Message sent to stream: {stream} with id: {id}")
 
-    return {"status": "ok", "streams": streams, "id": id}
+    return {"status": "ok", "streams": streams, "id": id, "storage": storage}
 
 
 @app.post("/callback")

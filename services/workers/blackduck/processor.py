@@ -6,13 +6,15 @@ import requests
 
 from model import StoragePayload
 from scan import Scan, ScanResult
-from git import GitHub
+from github import GitHub
 from comment import Comment
 
 logger = logging.getLogger(__name__)
 
 # Test mode: clone public repo instead of target repo (for testing/rate limiting)
 TEST_MODE = os.getenv("TEST_MODE", "").lower() in ("true", "1", "yes")
+# Debug output: print comment/results to terminal before posting
+DEBUG_OUTPUT = os.getenv("DEBUG_OUTPUT", "").lower() in ("true", "1", "yes")
 TEST_REPOS = [
     {"owner": "juice-shop", "name": "juice-shop", "branch": "master"},  # https://github.com/juice-shop/juice-shop
     {"owner": "OWASP", "name": "WebGoat", "branch": "main"},  # https://github.com/OWASP/WebGoat
@@ -81,15 +83,25 @@ class Processor:
             result = scanner.run(ctx.path, project_name)
 
             # 4. Post PR comment
-            github.post_pr_comment(ctx, self.comment.pr_comment(result))
+            pr_comment = self.comment.pr_comment(result)
+            if DEBUG_OUTPUT:
+                print(f"\n{'='*60}", flush=True)
+                print(f"PR COMMENT for {ctx.owner}/{ctx.name} PR#{ctx.pr_id}", flush=True)
+                print('='*60, flush=True)
+                print(pr_comment, flush=True)
+                print('='*60 + "\n", flush=True)
+            github.post_pr_comment(ctx, pr_comment)
 
             # 5. Create check run with annotations
+            check_summary = self.comment.check_run_summary(result)
+            if DEBUG_OUTPUT:
+                print(f"CHECK RUN: {check_summary}", flush=True)
             github.create_check_run(
                 ctx=ctx,
                 name="Blackduck Security Scan",
                 conclusion=self._determine_conclusion(result),
                 title="Blackduck Security Scan Results",
-                summary=self.comment.check_run_summary(result),
+                summary=check_summary,
                 annotations=self._build_annotations(result)
             )
 

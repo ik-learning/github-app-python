@@ -1,5 +1,6 @@
 import os
 import sys
+import signal
 import time
 import redis
 import threading
@@ -76,7 +77,7 @@ def stream_listener():
                         Redis.xdel(STREAM_NAME, entry_id)
                         logger.info(f"[{APP_NAME}] Processed and removed: {entry_id}")
                         logger.info(f"[{APP_NAME}] Job complete, exiting for clean restart...")
-                        os._exit(0)
+                        os.kill(os.getpid(), signal.SIGTERM)
             else:
                 logger.debug(f"[{APP_NAME}] No messages, continuing...")
         except redis.ConnectionError as e:

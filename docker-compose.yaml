@@ -23,10 +23,12 @@ services:
     ports:
       - "8090:8000"
     environment:
-      - STREAM_NAME=worker-1
+      - PYTHONUNBUFFERED=1
+      - STREAM_NAME=worker-blackduck
       - REDIS_HOST=redis
       - APP_NAME=blackduck-worker
       - TEST_MODE=true  # Use public repos for testing
+      - DEBUG_OUTPUT=true  # Print PR comments to terminal
     networks:
     - github-app-network
 
@@ -40,10 +42,12 @@ services:
     ports:
       - "8091:8000"
     environment:
+      - PYTHONUNBUFFERED=1
       - STREAM_NAME=worker-kics
       - REDIS_HOST=redis
       - APP_NAME=kics-worker
       - TEST_MODE=true  # Use public repos for testing
+      - DEBUG_OUTPUT=true  # Print PR comments to terminal
     networks:
     - github-app-network
 
