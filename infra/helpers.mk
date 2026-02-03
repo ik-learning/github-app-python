@@ -1,6 +1,8 @@
 # Determine the directory of this helper makefile
 INFRA_DIR := infra
 
+# -include infra/neo4j/helpers.mk
+
 docker-python-deps: ## Build dockerfile.python to install python dependencies
 	@docker build -f $(INFRA_DIR)/Dockerfile.python -t python-deps .
 

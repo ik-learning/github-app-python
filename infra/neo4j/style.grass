@@ -1,0 +1,94 @@
+node {
+  diameter: 50px;
+  color: #A5ABB6;
+  border-color: #9AA1AC;
+  border-width: 2px;
+  text-color-internal: #FFFFFF;
+  font-size: 10px;
+}
+
+node.CVE {
+  color: #E74C3C;
+  border-color: #C0392B;
+  caption: "{cve_id}";
+}
+
+node.Vulnerability {
+  color: #E67E22;
+  border-color: #D35400;
+  caption: "{severity}";
+}
+
+node.Repository {
+  color: #3498DB;
+  border-color: #2980B9;
+  diameter: 65px;
+  caption: "{name}";
+}
+
+node.PullRequest {
+  color: #00BCD4;
+  border-color: #00ACC1;
+  caption: "PR#{number}";
+}
+
+node.Commit {
+  color: #5DADE2;
+  border-color: #3498DB;
+  diameter: 40px;
+  caption: "{sha}";
+}
+
+node.Scan {
+  color: #9B59B6;
+  border-color: #8E44AD;
+  caption: "{scanner}";
+}
+
+node.Dependency {
+  color: #1ABC9C;
+  border-color: #16A085;
+  caption: "{name}";
+}
+
+node.File {
+  color: #7F8C8D;
+  border-color: #6C7A7D;
+  diameter: 40px;
+  caption: "{path}";
+}
+
+node.User {
+  color: #27AE60;
+  border-color: #229954;
+  caption: "{login}";
+}
+
+node.Rule {
+  color: #F1C40F;
+  border-color: #D4AC0D;
+  caption: "{name}";
+}
+
+relationship {
+  color: #A5ABB6;
+  shaft-width: 1px;
+  font-size: 8px;
+  padding: 3px;
+  text-color-external: #000000;
+  text-color-internal: #FFFFFF;
+  caption: "<type>";
+}
+
+relationship.DETECTED {
+  color: #E74C3C;
+  shaft-width: 2px;
+}
+
+relationship.MAPS_TO {
+  color: #E67E22;
+}
+
+relationship.HAS_CVE {
+  color: #E74C3C;
+}

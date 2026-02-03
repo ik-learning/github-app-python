@@ -272,7 +272,7 @@ class NoiseGenerator:
         return deps
 
     def generate_prs_with_scans(self, repos: List[str], users: List[Dict],
-                                  pr_count: int = 40) -> Dict[str, int]:
+                                pr_count: int = 40) -> Dict[str, int]:
         """Generate PRs, commits, scans, and vulnerabilities."""
         stats = {"prs": 0, "commits": 0, "scans": 0, "vulns": 0}
 

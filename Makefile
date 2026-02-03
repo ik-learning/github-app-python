@@ -5,6 +5,9 @@ help:
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
 
+-include infra/helpers.mk
+-include infra/neo4j/helpers.mk
+
 pre-commit-install: ## Install pre-commit hooks
 	@pre-commit install
 	@pre-commit gc
@@ -14,8 +17,6 @@ pre-commit-uninstall: ## Uninstall pre-commit hooks
 
 pre-commit-validate: ## Validate files with pre-commit hooks
 	@pre-commit run --all-files
-
--include infra/helpers.mk
 
 run-all: ## Start the Docker containers
 	docker-compose up --build

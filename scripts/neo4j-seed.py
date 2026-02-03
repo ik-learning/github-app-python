@@ -37,12 +37,18 @@ Usage:
     python scripts/neo4j-seed.py --uri bolt://localhost:7687 --password mypassword
     python scripts/neo4j-seed.py --clear  # Clear existing data first
     python scripts/neo4j-seed.py --demo-only  # Run demo queries only
+    python scripts/neo4j-seed.py --noise 500  # Add 500 noise records on top of demo data
+    python scripts/neo4j-seed.py --noise-only 500  # Only noise, no demo data
+    python scripts/neo4j-seed.py --clear --noise-only 1000  # Fresh DB with only noise
 """
 
 import argparse
 import os
 import sys
-from datetime import datetime, date
+import random
+import string
+import uuid
+from datetime import datetime, date, timedelta
 from typing import Optional
 
 try:
@@ -1023,8 +1029,8 @@ class SecurityGraphSeeder:
                 RETURN r.name AS repository,
                        d1.name + '@' + d1.version AS direct_dep,
                        d2.name + '@' + d2.version AS vuln_dep,
-                       cve.cve_id,
-                       cve.cvss_score
+                       cve.cve_id AS cve_id,
+                       cve.cvss_score AS cvss_score
                 ORDER BY cve.cvss_score DESC
                 LIMIT 5
             """)
@@ -1041,7 +1047,7 @@ class SecurityGraphSeeder:
                       -[:MAPS_TO]->(cve:CVE)
                 WITH cve, collect(DISTINCT r.name) AS affected_repos, count(DISTINCT r) AS repo_count
                 WHERE repo_count > 1
-                RETURN cve.cve_id, cve.cvss_score, repo_count, affected_repos
+                RETURN cve.cve_id AS cve_id, cve.cvss_score AS cvss_score, repo_count, affected_repos
                 ORDER BY repo_count DESC, cve.cvss_score DESC
             """)
             for record in result:
@@ -1077,7 +1083,142 @@ class SecurityGraphSeeder:
                 print(f"  Fixed: PR#{record['fixed_pr']} ({str(record['fixed_date'])[:10]})")
                 print(f"  Days to fix: {record['days_to_fix']}")
 
-    def seed_all(self, clear: bool = False):
+    def seed_noise(self, count: int = 100):
+        """
+        Generate noise data for testing.
+        Creates random repositories, PRs, commits, scans, and vulnerabilities.
+        """
+        print(f"\nGenerating {count} noise records...")
+
+        orgs = ["noise-org", "test-corp", "random-inc", "fake-labs", "demo-co"]
+        languages = ["python", "java", "go", "rust", "typescript", "ruby"]
+        file_types = [
+            ("terraform", ".tf", ["main.tf", "variables.tf", "outputs.tf", "providers.tf"]),
+            ("kubernetes", ".yaml", ["deployment.yaml", "service.yaml", "configmap.yaml", "ingress.yaml"]),
+            ("docker", "", ["Dockerfile", "docker-compose.yaml"]),
+            ("cloudformation", ".json", ["template.json", "stack.json"]),
+        ]
+        severities = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+        scanners = ["KICS", "BLACKDUCK"]
+
+        def random_string(length=8):
+            return ''.join(random.choices(string.ascii_lowercase, k=length))
+
+        def random_date(start_days_ago=365):
+            days_ago = random.randint(1, start_days_ago)
+            return datetime.now() - timedelta(days=days_ago)
+
+        with self.driver.session() as session:
+            repos_created = 0
+            prs_created = 0
+            vulns_created = 0
+
+            # Generate random repositories with full graph
+            num_repos = max(count // 10, 5)
+            for i in range(num_repos):
+                org = random.choice(orgs)
+                repo_name = f"{random.choice(languages)}-{random_string()}"
+                repo_id = f"{org}/{repo_name}"
+
+                # Create repository
+                session.run("""
+                    MERGE (r:Repository {owner: $owner, name: $name})
+                    SET r.full_name = $full_name,
+                        r.language = $language,
+                        r.created_at = $created_at,
+                        r.is_noise = true
+                """, owner=org, name=repo_name, full_name=repo_id,
+                    language=random.choice(languages),
+                    created_at=random_date(730).isoformat())
+                repos_created += 1
+
+                # Create random files for this repo
+                infra_type, ext, file_names = random.choice(file_types)
+                for fname in random.sample(file_names, min(len(file_names), random.randint(1, 3))):
+                    file_path = f"infra/{fname}"
+                    session.run("""
+                        MATCH (r:Repository {owner: $owner, name: $name})
+                        MERGE (f:File {path: $path, repository: $repo_id})
+                        SET f.type = $type, f.is_noise = true
+                        MERGE (r)-[:CONTAINS_FILE]->(f)
+                    """, owner=org, name=repo_name, repo_id=repo_id,
+                        path=file_path, type=infra_type)
+
+                # Create PRs for this repo
+                num_prs = random.randint(2, 8)
+                for pr_num in range(1, num_prs + 1):
+                    pr_date = random_date(180)
+                    pr_title = f"{random.choice(['Fix', 'Add', 'Update', 'Refactor'])} {random_string()}"
+
+                    session.run("""
+                        MATCH (r:Repository {owner: $owner, name: $name})
+                        MERGE (pr:PullRequest {repo: $repo_id, number: $pr_num})
+                        SET pr.title = $title,
+                            pr.created_at = $created_at,
+                            pr.merged_at = $merged_at,
+                            pr.is_noise = true
+                        MERGE (r)-[:HAS_PR]->(pr)
+                    """, owner=org, name=repo_name, repo_id=repo_id, pr_num=pr_num + 1000,
+                        title=pr_title, created_at=pr_date.isoformat(),
+                        merged_at=(pr_date + timedelta(days=random.randint(1, 7))).isoformat())
+                    prs_created += 1
+
+                    # Create commit for PR
+                    commit_sha = uuid.uuid4().hex[:40]
+                    session.run("""
+                        MATCH (pr:PullRequest {repo: $repo_id, number: $pr_num})
+                        MERGE (c:Commit {sha: $sha})
+                        SET c.message = $message,
+                            c.created_at = $created_at,
+                            c.is_noise = true
+                        MERGE (pr)-[:CONTAINS_COMMIT]->(c)
+                    """, repo_id=repo_id, pr_num=pr_num + 1000, sha=commit_sha,
+                        message=f"noise commit {random_string()}",
+                        created_at=pr_date.isoformat())
+
+                    # Create scan for commit
+                    scanner = random.choice(scanners)
+                    scan_id = f"scan-{uuid.uuid4().hex[:8]}"
+                    session.run("""
+                        MATCH (c:Commit {sha: $sha})
+                        MERGE (s:Scan {scan_id: $scan_id})
+                        SET s.scanner = $scanner,
+                            s.started_at = $started_at,
+                            s.completed_at = $completed_at,
+                            s.status = 'completed',
+                            s.is_noise = true
+                        MERGE (c)-[:SCANNED_BY]->(s)
+                    """, sha=commit_sha, scan_id=scan_id, scanner=scanner,
+                        started_at=pr_date.isoformat(),
+                        completed_at=(pr_date + timedelta(minutes=random.randint(1, 30))).isoformat())
+
+                    # Create random vulnerabilities
+                    num_vulns = random.randint(0, 5)
+                    for v in range(num_vulns):
+                        vuln_id = f"NOISE-{uuid.uuid4().hex[:8].upper()}"
+                        severity = random.choices(
+                            severities,
+                            weights=[5, 15, 30, 35, 15]  # Weighted towards MEDIUM/LOW
+                        )[0]
+
+                        session.run("""
+                            MATCH (s:Scan {scan_id: $scan_id})
+                            MERGE (v:Vulnerability {vuln_id: $vuln_id})
+                            SET v.severity = $severity,
+                                v.title = $title,
+                                v.description = $description,
+                                v.is_noise = true
+                            MERGE (s)-[:DETECTED]->(v)
+                        """, scan_id=scan_id, vuln_id=vuln_id, severity=severity,
+                            title=f"Noise vulnerability {random_string()}",
+                            description=f"Auto-generated noise vulnerability for testing")
+                        vulns_created += 1
+
+            print(f"  Created {repos_created} noise repositories")
+            print(f"  Created {prs_created} noise PRs with commits and scans")
+            print(f"  Created {vulns_created} noise vulnerabilities")
+
+    def seed_all(self, clear: bool = False, noise: int = 0):
         """Run all seeding operations."""
         if clear:
             self.clear_database()
@@ -1090,6 +1231,10 @@ class SecurityGraphSeeder:
         self.seed_files()
         self.seed_users()
         self.seed_prs_and_scans()
+
+        if noise > 0:
+            self.seed_noise(noise)
+
         self.print_stats()
         self.run_demo_queries()
 
@@ -1106,6 +1251,10 @@ def main():
                         help="Clear existing data before seeding")
     parser.add_argument("--demo-only", action="store_true",
                         help="Only run demo queries (assumes data exists)")
+    parser.add_argument("--noise", type=int, default=0, metavar="COUNT",
+                        help="Generate COUNT noise records (random repos, PRs, vulns)")
+    parser.add_argument("--noise-only", type=int, default=0, metavar="COUNT",
+                        help="Only generate noise records, skip base demo data")
 
     args = parser.parse_args()
 
@@ -1116,8 +1265,15 @@ def main():
         if args.demo_only:
             seeder.print_stats()
             seeder.run_demo_queries()
+        elif args.noise_only > 0:
+            if args.clear:
+                seeder.clear_database()
+            seeder.create_indexes()
+            seeder.seed_noise(args.noise_only)
+            seeder.print_stats()
+            print("\nNoise seeding complete!")
         else:
-            seeder.seed_all(clear=args.clear)
+            seeder.seed_all(clear=args.clear, noise=args.noise)
             print("\nSeeding complete!")
     finally:
         seeder.close()

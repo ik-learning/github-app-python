@@ -55,6 +55,7 @@ services:
     networks:
     - github-app-network
 
+  # http://localhost:6379/
   redis:
     image: "redis:8"
     container_name: redis
@@ -84,6 +85,35 @@ services:
       - RI_REDIS_HOST=redis
       - RI_REDIS_PORT=6379
       - RI_REDIS_ALIAS=local-redis
+
+  # http://localhost:7474/
+  neo4j:
+    image: "neo4j:2025.11"
+    container_name: neo4j
+    restart: unless-stopped
+    # The ports that will be accessible from outside the container - HTTP (7474) and Bolt (7687).
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    networks:
+      - github-app-network
+    volumes:
+      - ./infra/neo4j/style.grass:/var/lib/neo4j/import/style.grass:ro
+    environment:
+      # Authentication
+      # - NEO4J_AUTH=neo4j/naglfar123
+      # Memory Configuration
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_server_memory_pagecache_size=512M
+      - NEO4J_server_memory_heap_initial__size=512M
+      - NEO4J_server_memory_heap_max__size=1G
+      # Database Configuration
+      - NEO4J_db_tx__log_rotation_retention__policy=100M size
+      # APOC Configuration (Advanced Procedures)
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      # Disable authentication for development purposes
+      - NEO4J_dbms_security_auth__enabled=false
 
 networks:
   github-app-network:
