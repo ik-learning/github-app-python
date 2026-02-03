@@ -1,0 +1,20 @@
+# docker build -f infra/Dockerfile.kicks -t kicks-deps .
+# docker run --rm -it kicks-deps
+FROM checkmarx/kics:latest AS kics
+
+FROM python-deps:latest
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy KICS binary and assets from official image
+COPY --from=kics /app/bin/kics /opt/kics/kics
+COPY --from=kics /app/bin/assets /opt/kics/assets
+
+ENV PATH="/opt/kics:${PATH}"
+ENV KICS_QUERIES_PATH="/opt/kics/assets/queries"
+
+# Verify installation
+RUN kics version

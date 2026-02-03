@@ -28,6 +28,21 @@ services:
     networks:
     - github-app-network
 
+  # docker compose -f docker-compose.yaml up -d --build worker-kics
+  worker-kics:
+    build:
+      context: services/workers/kicks
+      dockerfile: Dockerfile
+    container_name: worker-kics
+    ports:
+      - "8091:8000"
+    environment:
+      - STREAM_NAME=worker-kics
+      - REDIS_HOST=redis
+      - APP_NAME=kics-worker
+    networks:
+    - github-app-network
+
   smee:
     image: "nodejs-smee:latest"
     container_name: smee

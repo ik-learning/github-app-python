@@ -20,7 +20,7 @@ pre-commit-validate: ## Validate files with pre-commit hooks
 run-all: ## Start the Docker containers
 	docker-compose up --build
 
-docker-compose-down:
+docker-compose-down: ## Stop the Docker containers
 	docker-compose down
 
 lock-dependencies: ## Generate Pipfile.lock using Docker (no local Python/pipenv needed)

@@ -11,7 +11,11 @@
       "Bash(python -m pytest:*)",
       "WebFetch(domain:detect.synopsys.com)",
       "WebFetch(domain:documentation.blackduck.com)",
-      "WebFetch(domain:polaris.blackduck.com)"
+      "WebFetch(domain:polaris.blackduck.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.kics.io)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
